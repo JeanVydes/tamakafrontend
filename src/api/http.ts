@@ -22,6 +22,13 @@ export class ApiError extends Error {
   }
 }
 
+// En desarrollo VITE_API_BASE_URL queda vacio y las peticiones van a rutas relativas /api,
+// que el proxy de Vite reenvia al gateway del backend (TAMAKA_GATEWAY). En produccion
+// .env.production define VITE_API_BASE_URL=https://api.taminaka.com (el gateway responde
+// CORS con "*"), de modo que el frontend puede servirse desde cualquier origen
+// (https://taminaka.com) sin depender del mismo origen.
+const API_BASE = ((import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "").replace(/\/+$/, "");
+
 const STORAGE_KEY = "tamaka.tokens";
 type Listener = (tokens: Tokens | null) => void;
 const listeners = new Set<Listener>();
@@ -83,7 +90,7 @@ async function refresh(): Promise<boolean> {
   if (!refreshing) {
     refreshing = (async () => {
       try {
-        const res = await fetch("/api/auth/refresh", {
+        const res = await fetch(`${API_BASE}/api/auth/refresh`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ refreshToken: current.refreshToken }),
@@ -116,7 +123,7 @@ export async function api<T>(path: string, { method = "GET", body, auth = true }
     const headers: Record<string, string> = { Accept: "application/json" };
     if (body !== undefined) headers["Content-Type"] = "application/json";
     if (auth && tokens) headers.Authorization = `Bearer ${tokens.accessToken}`;
-    return fetch(`/api${path}`, {
+    return fetch(`${API_BASE}/api${path}`, {
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,

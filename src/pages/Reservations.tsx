@@ -1,4 +1,4 @@
-import { CalendarDays, CalendarX2, Clock3, ExternalLink, MessageSquareText, ReceiptText, TicketCheck, UsersRound } from "lucide-react";
+import { CalendarDays, CalendarX2, Clock3, MessageSquareText, ReceiptText, TicketCheck, UsersRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { pagos, reservas, servicios } from "../api/endpoints";
 import { ApiError } from "../api/http";
@@ -32,18 +32,32 @@ function ReservaCard({ r, pago, onChanged }: { r: Reserva; pago?: Pago; onChange
   const toast = useToast();
   const svc = useServicio(r.servicioId);
   const [busy, setBusy] = useState<"" | "pay" | "cancel">("");
-  const [started, setStarted] = useState<Pago | null>(null);
   const [receipt, setReceipt] = useState<Comprobante | null>(null);
 
   const pay = async () => {
     setBusy("pay");
     try {
-      const p = await pagos.iniciar(r.id);
-      setStarted(p);
-      toast(t("res.paymentStarted", { ref: p.referenciaPasarela }));
+      // Mock de pasarela: el backend aprueba al instante y la reserva pasa a CONFIRMADA por el bus de eventos.
+      // Pagos aprende de la aceptación por el bus: justo después de aceptar puede responder 404; se reintenta unos segundos.
+      for (let intento = 0; ; intento++) {
+        try {
+          await pagos.iniciar(r.id);
+          break;
+        } catch (e) {
+          if (e instanceof ApiError && e.status === 404 && intento < 5) {
+            await new Promise((res) => setTimeout(res, 1000));
+            continue;
+          }
+          throw e;
+        }
+      }
       onChanged();
+      toast(t("res.paymentDone"));
+      // La confirmacion de la reserva viaja por el bus (~segundos): reintenta la recarga.
+      window.setTimeout(onChanged, 1200);
+      window.setTimeout(onChanged, 3500);
     } catch (e) {
-      // Pagos conoce la aceptación por el bus de eventos: justo después de aceptar puede responder 404.
+      // Último recurso: el operador acaba de aceptar y el pago aún no se habilita.
       toast(e instanceof ApiError && e.status === 404 ? t("res.payNotReady") : errorText(e, t), "error");
     } finally {
       setBusy("");
@@ -74,7 +88,7 @@ function ReservaCard({ r, pago, onChanged }: { r: Reserva; pago?: Pago; onChange
   };
 
   const paid = pago?.estado === "APROBADO" || pago?.estado === "REEMBOLSADO";
-  const activePayment = started ?? (pago?.estado === "PENDIENTE" ? pago : null);
+  const pendingPayment = pago?.estado === "PENDIENTE" ? pago : null;
 
   return (
     <article className="reservation-card">
@@ -117,19 +131,14 @@ function ReservaCard({ r, pago, onChanged }: { r: Reserva; pago?: Pago; onChange
         </p>
       )}
       {pago && <PagoPill estado={pago.estado} />}
-      {activePayment && r.estado === "ACEPTADA" && (
+      {pendingPayment && r.estado === "ACEPTADA" && (
         <div className="notice">
-          <p>{t("res.paymentStarted", { ref: activePayment.referenciaPasarela })}</p>
-          <p className="muted">{t("res.paymentSandbox")}</p>
-          {activePayment.urlPago && (
-            <a href={activePayment.urlPago} target="_blank" rel="noreferrer" className="text-link">
-              {t("res.paymentOpen")} <ExternalLink size={14} />
-            </a>
-          )}
+          <p>{t("res.paymentPending", { ref: pendingPayment.referenciaPasarela })}</p>
+          <p className="muted">{t("res.paymentDemo")}</p>
         </div>
       )}
       <div className="reservation-actions">
-        {r.estado === "ACEPTADA" && !activePayment && (
+        {r.estado === "ACEPTADA" && !pendingPayment && (
           <button type="button" className="primary-button" disabled={!!busy} onClick={pay}>
             {busy === "pay" ? t("res.paying") : t("res.pay")}
           </button>

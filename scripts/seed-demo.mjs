@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// Datos de demostración para probar el frontend contra el backend local (gateway en http://localhost).
+// Datos de demostración para probar el frontend contra el backend local (gateway en TAMAKA_GATEWAY o http://127.0.0.1:80, TAMAKA_HTTP_PORT del backend).
 // Todo lo que crea es sintético: cuentas de prueba, atractivos, un comercio con servicios, eventos y
 // una reserva en cada estado útil. Es idempotente en lo posible (ignora los 409 de "ya existe").
 //
 // Uso:
-//   node scripts/seed-demo.mjs
-//   PAGOS_WEBHOOK_SECRET=... node scripts/seed-demo.mjs   # además aprueba un pago por webhook firmado
+//   node scripts/seed-demo.mjs            # basta si el backend usa el mock de pago (aprobación al instante)
+//   PAGOS_WEBHOOK_SECRET=... node scripts/seed-demo.mjs   # con TAMAKA_PAGOS_APROBACION_AUTOMATICA=false, aprueba por webhook
 //
 // Los roles ADMIN y GESTOR no se pueden asignar por la API sin un admin previo, así que el script los
 // inserta en la base local con `docker exec infra-postgres-1 psql` (solo entorno de desarrollo).
@@ -19,7 +19,7 @@
 import { execFileSync } from "node:child_process";
 import crypto from "node:crypto";
 
-const BASE = process.env.TAMAKA_GATEWAY ?? "http://localhost";
+const BASE = process.env.TAMAKA_GATEWAY ?? "http://127.0.0.1:80";
 const PASSWORD = "Tamaka2026!";
 const WEBHOOK = process.env.PAGOS_WEBHOOK_SECRET ?? "";
 
@@ -159,9 +159,10 @@ if (!mias.length) {
   log(`reservas creadas: R-${r1.id} pendiente, R-${r2.id} aceptada, R-${r3.id} rechazada`);
 }
 
-// 5b. Una reserva pagada (requiere el secreto del webhook de la pasarela sandbox)
+// 5b. Una reserva pagada. El backend aprueba el pago al instante (mock, TAMAKA_PAGOS_APROBACION_AUTOMATICA=true);
+// con el mock desactivado se puede aprobar por webhook firmado pasando PAGOS_WEBHOOK_SECRET.
 const pagosViajero = ok(await call("GET", "/api/pagos/mis", { token: viajero.accessToken }), "mis pagos");
-if (WEBHOOK && !pagosViajero.some((p) => p.estado === "APROBADO")) {
+if (!pagosViajero.some((p) => p.estado === "APROBADO")) {
   const detalle = ok(await call("GET", `/api/comercios/${mine[0].id}`), "detalle");
   const fecha = new Date(Date.now() + 12 * 86400_000).toISOString().slice(0, 10);
   const r4 = ok(await call("POST", "/api/reservas", { token: viajero.accessToken, body: { servicioId: detalle.servicios[0].id, fechaReserva: fecha, numeroPersonas: 2 } }), "reserva");
@@ -174,13 +175,18 @@ if (WEBHOOK && !pagosViajero.some((p) => p.estado === "APROBADO")) {
     else await new Promise((res) => setTimeout(res, 1000));
   }
   if (!pago) throw new Error("Pagos no recibió la reserva aceptada (¿bus de eventos detenido?)");
-  const monto = Number(pago.monto).toFixed(2);
-  const firma = crypto.createHmac("sha256", WEBHOOK).update(`${pago.referenciaPasarela}|APROBADO|${monto}`).digest("hex");
-  await call("POST", "/api/pagos/webhook", {
-    body: { referencia: pago.referenciaPasarela, estado: "APROBADO", monto },
-    headers: { "X-Firma-Pasarela": firma },
-  });
-  log(`R-${r4.id} pagada por webhook (se confirma al llegar el evento PagoAprobado)`);
+  if (pago.estado === "APROBADO") {
+    log(`R-${r4.id} pagada al instante (aprobación automática del mock); se confirma por el bus de eventos`);
+  } else {
+    if (!WEBHOOK) throw new Error("Pago en PENDIENTE y falta PAGOS_WEBHOOK_SECRET para aprobarlo por webhook");
+    const monto = Number(pago.monto).toFixed(2);
+    const firma = crypto.createHmac("sha256", WEBHOOK).update(`${pago.referenciaPasarela}|APROBADO|${monto}`).digest("hex");
+    await call("POST", "/api/pagos/webhook", {
+      body: { referencia: pago.referenciaPasarela, estado: "APROBADO", monto },
+      headers: { "X-Firma-Pasarela": firma },
+    });
+    log(`R-${r4.id} pagada por webhook (se confirma al llegar el evento PagoAprobado)`);
+  }
 }
 
 // 6. Preferencias del viajero

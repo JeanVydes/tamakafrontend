@@ -6,24 +6,37 @@ y de los wireframes del proyecto, con cambios donde el backend real lo exigía.
 
 ## Arrancar
 
-Requisitos: Node 20+ y el backend levantado (repositorio `tamakabackend`, carpeta `infra`; gateway en `http://localhost`).
+Requisitos: Node 20+ y el backend levantado (repositorio `tamakabackend`, `docker compose up -d`; el gateway nginx
+publica `TAMAKA_HTTP_PORT`, 80 por defecto, ver `infra/gateway/nginx.conf`).
 
 ```bash
-cd frontend
+cd tamakafrontend
 npm install
 npm run dev          # http://localhost:5173
 ```
 
-Vite reenvía `/api` al gateway (`TAMAKA_GATEWAY`, por defecto `http://127.0.0.1`), así el navegador ve un solo
-origen y no hace falta CORS. Para producción: `npm run build` y servir `dist/` detrás del mismo nginx, con
-`try_files $uri /index.html;` para las rutas de la SPA.
+Vite reenvía `/api` al gateway (`TAMAKA_GATEWAY`, por defecto `http://127.0.0.1:80`), así el navegador ve un solo
+origen y no hace falta CORS en desarrollo.
+
+## Producción
+
+El frontend se sirve desde `https://taminaka.com` y la API desde `https://api.taminaka.com` (el mismo gateway nginx
+del backend). `.env.production` define `VITE_API_BASE_URL=https://api.taminaka.com`, de modo que `src/api/http.ts`
+usa rutas absolutas a la API en vez de las relativas `/api` del desarrollo. El gateway responde CORS para
+todos los orígenes (`Access-Control-Allow-Origin: *`) + preflight `OPTIONS` (ver `infra/gateway/nginx.conf` del backend).
+
+```bash
+npm run build        # genera dist/ con la API de producción
+# servir dist/ estático en https://taminaka.com con try_files $uri /index.html; para las rutas de la SPA
+```
+
+`npx vite preview` también funciona: sirve `dist/` y aplica el mismo proxy `/api` de desarrollo.
 
 ## Datos de demostración
 
 ```bash
 node scripts/seed-demo.mjs
-# con un pago aprobado por webhook firmado:
-PAGOS_WEBHOOK_SECRET=$(grep '^PAGOS_WEBHOOK_SECRET=' <ruta-a-tamakabackend>/infra/.env | cut -d= -f2-) node scripts/seed-demo.mjs
+# el pago es un mock: el backend lo aprueba al instante (TAMAKA_PAGOS_APROBACION_AUTOMATICA=true, por defecto)
 ```
 
 Crea atractivos con estados y alertas, eventos, un comercio con servicios y reservas en varios estados. Los roles
@@ -80,4 +93,4 @@ src/
   historial de cambios de cuenta, retirar el rol Gestor, editar perfil y cambiar contraseña: sin endpoints.
 - «Marcar todas como leídas» marca una por una (no hay endpoint masivo).
 - Recomendaciones: la API devuelve solo ids; el «¿Por qué?» se explica con las categorías de interés del turista.
-- Pagos: la pasarela es un sandbox; tras iniciar el pago la confirmación llega por el webhook de la pasarela.
+- Pagos: es un mock (`TAMAKA_PAGOS_APROBACION_AUTOMATICA=true`): al pulsar **Pagar** el cobro se aprueba al instante y la reserva pasa a confirmada por el bus de eventos. El webhook firmado sigue disponible con el mock desactivado.
