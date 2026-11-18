@@ -51,6 +51,12 @@
   box-sizing: border-box;
 }
 
+/* Reserva siempre el hueco de la barra de desplazamiento: al hacer zoom, o al pasar de una página corta a una larga,
+   la barra aparece y desaparece y, sin esto, todo el contenido (el encabezado incluido) se desplazaba esos píxeles. */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -334,6 +340,15 @@ img {
   gap: 28px;
 }
 
+/* El encabezado ocupa todo el ancho: el logo queda fijo en el borde izquierdo y los botones en el derecho.
+   Antes iba en el contenedor centrado de 1180 px, así que al hacer zoom (o en pantallas anchas) el logo y toda la barra
+   se deslizaban de sitio, y en el portal de administración ni siquiera coincidían con el menú lateral, que sí va al borde. */
+.site-header .header-inner {
+  width: auto;
+  margin-inline: 0;
+  padding-inline: 24px;
+}
+
 .logo {
   display: inline-flex;
   align-items: center;
@@ -347,20 +362,59 @@ img {
   flex-shrink: 0;
 }
 
+/* Marca: el pin naranja con la palma. La palma usa --logo-palm para poder aclararse sobre fondos oscuros. */
 .logo-mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-  background: var(--coral);
-  color: #fff;
   display: grid;
   place-items: center;
-  transform: rotate(-4deg);
-  transition: transform 0.4s var(--ease);
+  height: 46px;
+  --logo-palm: #36434f;
 }
 
-.logo:hover .logo-mark {
-  transform: rotate(8deg);
+.logo-mark svg {
+  display: block;
+  height: 100%;
+  width: auto;
+  overflow: visible;
+  transition: transform 0.45s var(--ease);
+}
+
+.logo-palm {
+  fill: var(--logo-palm);
+  transform-box: fill-box;
+  transform-origin: 30% 100%;
+}
+
+/* Al pasar el cursor: el pin da un pequeño salto y la palma se mece una vez, como con una brisa. */
+.logo:hover .logo-mark svg,
+.logo:focus-visible .logo-mark svg {
+  transform: translateY(-3px) scale(1.06);
+}
+
+.logo:hover .logo-palm,
+.logo:focus-visible .logo-palm {
+  animation: palm-sway 0.9s ease-in-out;
+}
+
+@keyframes palm-sway {
+  0% {
+    transform: rotate(0);
+  }
+  22% {
+    transform: rotate(-6deg);
+  }
+  52% {
+    transform: rotate(5deg);
+  }
+  78% {
+    transform: rotate(-2.5deg);
+  }
+  100% {
+    transform: rotate(0);
+  }
+}
+
+footer .logo-mark {
+  --logo-palm: #fff;
 }
 
 .nav-links {
@@ -391,7 +445,8 @@ img {
   background: var(--seafoam);
 }
 
-.nav-auth-mobile {
+.nav-auth-mobile,
+.nav-lang {
   display: none;
 }
 
@@ -499,13 +554,20 @@ img {
   font-size: 12px;
 }
 
+.avatar.lg {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  font-size: 15px;
+}
+
 .profile-dropdown {
   position: absolute;
   right: 0;
   top: 54px;
   z-index: 40;
-  width: 260px;
-  padding: 8px;
+  width: 288px;
+  padding: 6px;
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -520,56 +582,146 @@ img {
   }
 }
 
-.profile-dropdown p {
-  margin: 8px 10px;
+/* Quién soy: nombre y correo, para que el menú diga a qué cuenta pertenece. */
+.menu-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 10px 12px;
+}
+
+.menu-identity-copy {
+  min-width: 0;
+  display: grid;
+  line-height: 1.3;
+}
+
+.menu-identity-copy strong,
+.menu-identity-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-identity-copy strong {
+  font-size: 15px;
+}
+
+.menu-identity-copy small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.menu-rule {
+  margin: 4px 6px;
+  border: 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.menu-label {
+  margin: 10px 12px 4px;
   font-size: 12px;
   font-weight: 700;
+  letter-spacing: 0.02em;
   color: var(--muted);
 }
 
-.role-option,
-.dropdown-profile,
-.dropdown-logout {
+.menu-item {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 11px 10px;
+  gap: 12px;
+  padding: 10px 12px;
   border: 0;
   border-radius: 10px;
   background: none;
   color: var(--ink);
+  text-align: left;
   text-decoration: none;
   font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
 }
 
-.role-option span {
+.menu-item > svg {
+  flex: none;
+  color: var(--muted);
+}
+
+.menu-item span {
   flex: 1;
-  text-align: left;
 }
 
-.role-option:hover,
-.role-option.selected {
+.menu-item:hover {
+  background: var(--sand);
+}
+
+.menu-item.selected {
+  background: var(--seafoam);
+  color: var(--ocean-dark);
+}
+
+.menu-item.selected > svg {
+  color: var(--ocean);
+}
+
+.menu-item.quiet {
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+/* Habilitar modo operador es una invitación, no un espacio: va en su propia tarjeta. */
+.menu-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 6px 4px 4px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  text-decoration: none;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.menu-cta:hover {
+  background: var(--sand);
+  border-color: #c2d1ce;
+}
+
+.menu-cta-icon {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
   background: var(--seafoam);
   color: var(--ocean);
 }
 
-.dropdown-profile {
-  justify-content: space-between;
-  margin-top: 6px;
-  border-top: 1px solid var(--line);
-  border-radius: 0;
-  color: var(--coral-ink);
-  font-weight: 700;
+.menu-cta-copy {
+  display: grid;
+  line-height: 1.3;
 }
 
-.dropdown-logout {
-  color: var(--muted);
+.menu-cta-copy strong {
+  font-size: 14px;
 }
 
-.dropdown-logout:hover {
-  color: var(--ink);
-  background: var(--sand);
+.menu-cta-copy small {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.menu-item:focus-visible,
+.menu-cta:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(15 102 116 / 0.3);
 }
 
 .mobile-toggle {
@@ -658,6 +810,24 @@ img {
   background: none;
   color: var(--ink);
   font-size: 16px;
+}
+
+/* El estilo global de input:focus (borde y halo) no debe dibujar un segundo rectángulo dentro del buscador:
+   el foco ya lo muestra el contenedor con :focus-within. */
+.search-box input,
+.search-box input:hover,
+.search-box input:focus {
+  width: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  outline: 0;
+}
+
+.search-box input::-webkit-search-cancel-button {
+  cursor: pointer;
 }
 
 .search-box input::placeholder {
@@ -924,21 +1094,28 @@ img {
   font-size: 11px;
 }
 
-.state-banner {
-  display: grid;
-  gap: 6px;
-  padding: 12px 20px;
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--ink-soft);
+/* Aviso de estado de un atractivo (cerrado / restringido): una etiqueta sobre la foto, sin alterar la altura. */
+.state-chip {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  max-width: calc(100% - 84px);
+  padding: 6px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  box-shadow: var(--shadow-sm);
 }
 
-.offer-card.state-cerrado .state-banner {
+.offer-card.state-cerrado .state-chip {
   background: var(--coral-soft);
+  color: var(--coral-ink);
 }
 
-.offer-card.state-restringido .state-banner {
+.offer-card.state-restringido .state-chip {
   background: var(--pending-soft);
+  color: var(--pending);
 }
 
 .offer-card.state-cerrado .card-footer .status,
@@ -1067,6 +1244,7 @@ img {
 
 .card-footer {
   margin-top: auto;
+  min-height: 52px; /* con o sin la etiqueta de estado, el pie mide lo mismo */
   padding-top: 14px;
   border-top: 1px solid var(--line-soft);
   display: flex;
@@ -1488,33 +1666,58 @@ img {
   border-color: #f0dfa8;
 }
 
+/* Alertas: filas limpias dentro de la tarjeta blanca; solo el icono lleva el tono de aviso. */
 .alert-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 12px;
 }
 
 .alert-list li {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 10px;
-  padding: 12px;
-  border-radius: 12px;
-  background: var(--coral-soft);
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 14px 0;
 }
 
-.alert-list svg {
+.alert-list li:first-child {
+  padding-top: 4px;
+}
+
+.alert-list li:last-child {
+  padding-bottom: 0;
+}
+
+.alert-list li + li {
+  border-top: 1px solid var(--line-soft);
+}
+
+.alert-icon {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--coral-soft);
   color: var(--coral-ink);
-  margin-top: 2px;
+}
+
+.alert-list p {
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .alert-list time {
   display: block;
   margin-top: 4px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .service-list {
@@ -1664,9 +1867,213 @@ input[type="checkbox"] {
   width: auto;
 }
 
+/* ---------- Selector propio (components/Select.tsx) ---------- */
+
+.select-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 400;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.select-trigger:hover {
+  border-color: #c2d1ce;
+}
+
+.select-trigger:focus-visible,
+.select-trigger[aria-expanded="true"] {
+  outline: none;
+  border-color: var(--ocean);
+  box-shadow: 0 0 0 3px rgb(15 102 116 / 0.15);
+}
+
+.select-trigger:disabled {
+  background: var(--sand);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.select-trigger > svg {
+  flex: none;
+  color: var(--muted);
+  transition: transform 0.2s var(--ease);
+}
+
+.select-trigger[aria-expanded="true"] > svg {
+  transform: rotate(180deg);
+  color: var(--ocean);
+}
+
+.select-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select-value.placeholder {
+  color: #6d7f84;
+}
+
+.select-menu {
+  position: fixed;
+  z-index: 200;
+  overflow-y: auto;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  animation: drop-in 0.18s var(--ease);
+}
+
+.select-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--ink);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.select-option.active {
+  background: var(--sand);
+}
+
+.select-option.selected {
+  background: var(--seafoam);
+  color: var(--ocean-dark);
+  font-weight: 600;
+}
+
+.select-option > svg {
+  flex: none;
+  color: var(--ocean);
+}
+
 .form-stack {
   display: grid;
   gap: 18px;
+}
+
+/* Campo con etiqueta propia (la contraseña lleva un botón dentro, así que no puede ir envuelta en <label>). */
+.field {
+  display: grid;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.field > small {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.password-wrap {
+  position: relative;
+}
+
+.password-wrap input {
+  padding-right: 48px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    background 0.15s;
+}
+
+.password-toggle:hover {
+  background: var(--sand);
+  color: var(--ink);
+}
+
+.password-toggle:focus-visible {
+  outline: none;
+  color: var(--ocean);
+  box-shadow: 0 0 0 3px rgb(15 102 116 / 0.25);
+}
+
+.strength {
+  display: grid;
+  gap: 7px;
+  --meter: var(--line);
+}
+
+.strength[data-level="1"] {
+  --meter: var(--warning);
+}
+
+.strength[data-level="2"] {
+  --meter: #b98a1b;
+}
+
+.strength[data-level="3"] {
+  --meter: var(--ocean);
+}
+
+.strength[data-level="4"] {
+  --meter: var(--success);
+}
+
+.strength-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+
+.strength-bar span {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--line);
+  transition: background 0.2s;
+}
+
+.strength[data-level="1"] .strength-bar span:nth-child(-n + 1),
+.strength[data-level="2"] .strength-bar span:nth-child(-n + 2),
+.strength[data-level="3"] .strength-bar span:nth-child(-n + 3),
+.strength[data-level="4"] .strength-bar span:nth-child(-n + 4) {
+  background: var(--meter);
+}
+
+.strength-text {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.strength-text strong {
+  color: var(--ink);
+  font-weight: 700;
 }
 
 .form-grid {
@@ -1833,6 +2240,10 @@ input[type="checkbox"] {
 .auth-art {
   position: relative;
   overflow: hidden;
+  margin: 16px 0 16px 16px;
+  border-radius: 28px;
+  background: var(--ocean-deep);
+  isolation: isolate;
 }
 
 .auth-art img {
@@ -1841,6 +2252,52 @@ input[type="checkbox"] {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: 50% 62%;
+}
+
+/* Velo océano: oscurece el borde inferior para que el pie de foto se lea sobre cualquier foto. */
+.auth-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgb(7 45 53 / 0.22) 0%, rgb(7 45 53 / 0) 32%, rgb(7 45 53 / 0.9) 100%);
+  pointer-events: none;
+}
+
+.auth-art-caption {
+  position: absolute;
+  inset: auto 36px 36px;
+  z-index: 1;
+  display: grid;
+  gap: 12px;
+  color: #fff;
+}
+
+.auth-art-place {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  padding: 5px 12px 5px 10px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.16);
+  backdrop-filter: blur(6px);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.auth-art-line {
+  max-width: 17em;
+  font-family: Manrope, sans-serif;
+  font-size: clamp(24px, 2.4vw, 34px);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+}
+
+.auth-art-credit {
+  font-size: 11px;
+  color: rgb(255 255 255 / 0.72);
 }
 
 .auth-panel {
@@ -2130,11 +2587,14 @@ input[type="checkbox"] {
 
 /* ---------- Favoritos, recomendaciones, notificaciones ---------- */
 
+/* La tarjeta llena todo el alto de su celda y el botón de debajo ocupa siempre lo mismo:
+   todas las tarjetas de una fila miden igual, tengan aviso, descripción o no. */
 .fav-wrap,
 .reco-wrap {
+  position: relative;
   display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
   gap: 10px;
-  align-content: start;
 }
 
 .remove-fav,
@@ -2169,11 +2629,18 @@ input[type="checkbox"] {
   color: #fff;
 }
 
+/* La explicación flota bajo el botón: al abrirla no empuja ni estira a las demás tarjetas. */
 .why-box {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 10;
   padding: 14px 16px;
   border-radius: 14px;
   background: #fff;
   border: 1px solid var(--line);
+  box-shadow: var(--shadow);
   font-size: 14px;
   line-height: 1.55;
   animation: rise 0.3s var(--ease);
@@ -2231,42 +2698,154 @@ input[type="checkbox"] {
 
 /* ---------- Perfil ---------- */
 
-.profile-layout {
-  display: grid;
-  grid-template-columns: 270px 1fr;
-  gap: 24px;
-  align-items: start;
+/* Cabecera de la cuenta: foto de la costa, avatar que la cruza, identidad y tres datos de un vistazo. */
+.profile-hero {
+  margin-bottom: 20px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
 }
 
-.profile-card {
-  padding: 28px 22px;
-  display: grid;
-  justify-items: center;
-  gap: 10px;
-  text-align: center;
-  position: sticky;
-  top: 96px;
+.profile-banner {
+  position: relative;
+  height: 156px;
+  background: var(--ocean-deep);
 }
 
-.profile-card p {
-  color: var(--muted);
-  font-size: 14px;
+.profile-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 58%;
 }
 
-.profile-card .secondary-button {
-  margin-top: 14px;
+.profile-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgb(7 45 53 / 0) 40%, rgb(7 45 53 / 0.35) 100%);
+}
+
+.profile-hero-body {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 22px;
+  padding: 0 28px 24px;
+  margin-top: -50px;
 }
 
 .large-avatar {
-  width: 92px;
-  height: 92px;
-  font-size: 28px;
-  margin-bottom: 6px;
+  flex: none;
+  width: 100px;
+  height: 100px;
+  font-size: 32px;
+  border: 4px solid #fff;
+  box-shadow: var(--shadow-sm);
 }
 
-.profile-main {
+.profile-id {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding-top: 58px;
+}
+
+.profile-id h2 {
+  font-size: 26px;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.profile-id p {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.profile-id .pill-row {
+  margin-top: 8px;
+}
+
+.profile-logout {
+  flex: none;
+  margin-top: 62px;
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  margin: 0;
+  border-top: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.profile-stats > div {
+  padding: 16px 28px;
+}
+
+.profile-stats > div + div {
+  border-left: 1px solid var(--line);
+}
+
+.profile-stats dt {
+  margin-bottom: 3px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+.profile-stats dd {
+  margin: 0;
+  font-family: Manrope, sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.profile-grid.single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.profile-side {
   display: grid;
   gap: 20px;
+}
+
+.prefs-language {
+  max-width: 280px;
+  margin-top: 22px;
+}
+
+.details-card > .edit-actions {
+  margin-top: 22px;
+}
+
+/* Insignia de cada tarjeta: da un ancla visual a cada sección sin sumar colores. */
+.details-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.card-icon {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--seafoam);
+  color: var(--ocean);
 }
 
 .details-card {
@@ -2318,6 +2897,11 @@ input[type="checkbox"] {
   border-radius: 14px;
   background: #fff;
   font-weight: 700;
+  text-align: left;
+}
+
+.mode span {
+  flex: 1;
 }
 
 .mode.on {
@@ -2330,18 +2914,8 @@ input[type="checkbox"] {
 
 .operator-invite {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 18px;
-}
-
-.operator-invite > div {
-  display: grid;
-  gap: 10px;
+  gap: 16px;
   justify-items: start;
-}
-
-.operator-invite h2 {
-  font-size: 22px;
 }
 
 .panel-links {
@@ -2565,6 +3139,7 @@ input[type="checkbox"] {
 }
 
 .table-wrap {
+  position: relative; /* contiene los .sr-only de las cabeceras: si no, ensanchan toda la página en móvil */
   overflow-x: auto;
 }
 
@@ -2895,17 +3470,43 @@ footer .logo {
 
   .detail-layout,
   .two-col,
-  .profile-layout {
-    grid-template-columns: 1fr;
+  .profile-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .detail-side,
-  .profile-card {
+  .detail-side {
     position: static;
   }
 
+  .profile-hero-body {
+    flex-wrap: wrap;
+    padding: 0 20px 20px;
+    gap: 14px;
+  }
+
+  .profile-id {
+    flex-basis: 100%;
+    padding-top: 0;
+  }
+
+  .profile-logout {
+    margin-top: 0;
+    width: 100%;
+  }
+
+  .profile-stats > div {
+    padding: 14px 16px;
+  }
+
+  .profile-stats dd {
+    font-size: 15px;
+  }
+
+  /* minmax(0, 1fr): sin el 0, la barra de pestañas (que hace scroll por dentro) ensanchaba toda la página. */
   .dashboard {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    /* La barra de pestañas mide lo suyo y el contenido ocupa el resto: sin esto, con poco contenido la barra se estiraba. */
+    grid-template-rows: auto 1fr;
   }
 
   .dashboard-nav {
@@ -2944,12 +3545,154 @@ footer .logo {
     width: min(100% - 32px, 1180px);
   }
 
+  /* ---------- Tablas en móvil ----------
+     Cada fila es una tarjeta: la primera celda (nombre o referencia) hace de título, cada dato lleva su etiqueta
+     delante (data-label, ver lib/responsiveTables.ts) y los botones de la fila quedan abajo, a lo ancho. Así no hay
+     que desplazarse hacia la derecha para ver el estado o las acciones. */
+  .table-wrap {
+    overflow-x: visible;
+  }
+
+  table,
+  tbody,
+  tr,
+  td {
+    display: block;
+    width: 100%;
+  }
+
+  thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  tbody tr {
+    padding: 16px;
+    border-top: 1px solid var(--line);
+  }
+
+  tbody tr:first-child {
+    border-top: 0;
+  }
+
+  td,
+  td.right {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 12px;
+    padding: 5px 0;
+    border: 0;
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+
+  td::before {
+    content: attr(data-label);
+    flex: 0 0 min(34%, 124px);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  td > * {
+    min-width: 0;
+  }
+
+  td:first-child {
+    padding: 0 0 8px;
+    font-size: 16px;
+  }
+
+  td:first-child::before,
+  td[data-label=""]::before {
+    display: none;
+  }
+
+  td.row-actions,
+  td[data-label=""] {
+    justify-content: flex-start;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line-soft);
+    white-space: normal;
+  }
+
+  .row-actions > * + * {
+    margin-left: 0;
+  }
+
+  /* En móvil los tres datos de la cuenta pasan a filas: etiqueta a la izquierda, valor a la derecha. */
+  .profile-stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-stats > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .profile-stats > div + div {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .profile-stats dt {
+    margin: 0;
+  }
+
   .header-inner {
     height: 64px;
   }
 
   .site-header .profile-menu .profile-trigger svg {
     display: none;
+  }
+
+  .site-header .header-inner {
+    padding-inline: 16px;
+  }
+
+  /* Barra del teléfono: logo · campana · avatar · menú. El idioma pasa al menú desplegable. */
+  .lang-desktop {
+    display: none;
+  }
+
+  .nav-lang {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding: 14px 12px 4px;
+    border-top: 1px solid var(--line-soft);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .header-actions {
+    gap: 6px;
+  }
+
+  .site-header .icon-button.notification,
+  .site-header .mobile-toggle {
+    width: 42px;
+    height: 42px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+  }
+
+  .site-header .icon-button.notification:hover,
+  .site-header .mobile-toggle:hover {
+    background: var(--sand);
   }
 
   .nav-links {
@@ -3039,7 +3782,7 @@ footer .logo {
   }
 
   .auth-page {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .auth-art {
@@ -3133,8 +3876,19 @@ footer .logo {
     max-width: none;
   }
 
+  /* Campos y acciones a todo el ancho de la tarjeta: nada flota a la derecha ni queda más corto que su vecino. */
+  .prefs-language {
+    max-width: none;
+  }
+
+  .edit-actions > *,
+  .dialog-actions > * {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
   .operator-invite {
-    grid-template-columns: 1fr;
+    justify-items: stretch;
   }
 
   .notif-list li {
@@ -3161,6 +3915,86 @@ footer .logo {
 
   .lang-toggle button {
     padding: 6px 7px;
+  }
+}
+
+/* Los enlaces principales van en el centro del encabezado, entre el logo y los botones. En pantallas anchas el centro es
+   el de la ventana (tres columnas: logo · enlaces · botones); en las intermedias, el de lo que sobra entre el logo y
+   los botones, que es lo que cabe sin que se pisen. */
+@media (min-width: 981px) {
+  .nav-links {
+    justify-content: center;
+  }
+}
+
+@media (min-width: 1241px) {
+  .site-header .header-inner {
+    display: grid;
+    grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr);
+  }
+
+  .site-header .header-actions {
+    justify-self: end;
+    margin-left: 0;
+  }
+
+  .nav-links {
+    flex: none;
+  }
+}
+
+/* Encabezado en anchos intermedios (zoom 110 %–150 % en un portátil): antes de pasar al menú de hamburguesa se compacta
+   poco a poco, para que ni los enlaces se pisen con los botones de la derecha ni el encabezado «salte» de golpe.
+   Primero se oculta el nombre junto al avatar y se estrechan los enlaces; el menú de la cuenta sigue mostrando quién eres. */
+@media (min-width: 981px) and (max-width: 1240px) {
+  .header-inner {
+    gap: 16px;
+  }
+
+  .profile-copy {
+    display: none;
+  }
+
+  .nav-links {
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .nav-link {
+    gap: 6px;
+    padding: 9px 9px;
+    font-size: 14.5px;
+  }
+
+  .header-actions {
+    gap: 8px;
+  }
+}
+
+/* Justo antes del menú de hamburguesa, los enlaces pierden el icono y quedan solo con el texto: así caben hasta cinco. */
+@media (min-width: 981px) and (max-width: 1120px) {
+  .nav-links .nav-link svg {
+    display: none;
+  }
+}
+
+/* Teléfonos de 375 px o menos: con sesión iniciada el encabezado (logo, idioma, campana, avatar, menú) no cabía. */
+@media (max-width: 400px) {
+  .header-inner {
+    gap: 8px;
+  }
+
+  .header-actions {
+    gap: 6px;
+  }
+
+  .logo {
+    gap: 8px;
+    font-size: 17px;
+  }
+
+  .logo-mark {
+    height: 38px;
   }
 }
 

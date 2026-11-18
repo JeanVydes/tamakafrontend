@@ -12,6 +12,9 @@ import { EmptyState, Loading } from "./ui";
 
 function Footer() {
   const { t } = useI18n();
+  const { cuenta } = useAuth();
+  // Un gestor turístico no se hace operador: el enlace «Ser operador» no se le ofrece.
+  const offerOperator = !cuenta?.roles.includes("GESTOR");
   return (
     <footer>
       <div className="shell footer-main">
@@ -27,12 +30,11 @@ function Footer() {
         <div>
           <strong>{t("footer.community")}</strong>
           <Link to="/#responsable">{t("footer.responsible")}</Link>
-          <Link to="/perfil#operador">{t("footer.beOperator")}</Link>
+          {offerOperator && <Link to="/perfil#operador">{t("footer.beOperator")}</Link>}
         </div>
       </div>
       <div className="shell footer-bottom">
         <span>{t("footer.rights", { year: new Date().getFullYear() })}</span>
-        <span>{t("footer.photos")}</span>
       </div>
     </footer>
   );
@@ -95,7 +97,7 @@ export function PanelLayout({ title, links }: { title: string; links: PanelLink[
 
 /** Protege rutas por rol activo del token. Con el rol OPERADOR en modo viajero, ofrece cambiar de modo. */
 export function RequireRole({ any, children }: { any: Rol[]; children: ReactNode }) {
-  const { ready, cuenta, roles, applySession } = useAuth();
+  const { ready, cuenta, has, applySession } = useAuth();
   const { t } = useI18n();
   const toast = useToast();
   const navigate = useNavigate();
@@ -104,7 +106,7 @@ export function RequireRole({ any, children }: { any: Rol[]; children: ReactNode
 
   if (!ready) return <Loading />;
   if (!cuenta) return <Navigate to={`/ingresar?next=${encodeURIComponent(location.pathname)}`} replace />;
-  if (any.some((r) => roles.includes(r))) return <>{children}</>;
+  if (any.some((r) => has(r))) return <>{children}</>;
 
   const needsOperatorMode = any.includes("OPERADOR") && cuenta.roles.includes("OPERADOR");
   return (

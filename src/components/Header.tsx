@@ -1,5 +1,4 @@
 import {
-  ArrowRight,
   Bell,
   CalendarDays,
   Check,
@@ -11,6 +10,7 @@ import {
   ShieldCheck,
   Sparkles,
   Store,
+  UserCog,
   UserRound,
   X,
   Landmark,
@@ -22,6 +22,7 @@ import type { Rol } from "../api/types";
 import { useAuth } from "../auth/Auth";
 import { useI18n, type Lang } from "../i18n/I18n";
 import { errorText, initials } from "../lib/format";
+import { LogoMark } from "./LogoMark";
 import { useToast } from "./Toast";
 
 export const NOTIF_EVENT = "tamaka:notificaciones";
@@ -30,7 +31,7 @@ export function Logo({ to = "/" }: { to?: string }) {
   return (
     <Link to={to} className="logo" aria-label="TAMAKA">
       <span className="logo-mark" aria-hidden="true">
-        <Compass size={20} />
+        <LogoMark />
       </span>
       <span>TAMAKA</span>
     </Link>
@@ -93,6 +94,7 @@ function ProfileMenu() {
   const { t } = useI18n();
   const toast = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -111,7 +113,19 @@ function ProfileMenu() {
 
   if (!cuenta) return null;
   const owned = cuenta.roles;
-  const current: Rol = roles.includes("OPERADOR") ? "OPERADOR" : "TURISTA";
+  // Espacio en el que se está: el modo operador manda; si no, el del panel que se visita (un administrador que también es
+  // gestor ve «Administrador» en /admin y «Gestor turístico» en /gestor); fuera de un panel, el de mayor rango.
+  const current: Rol = roles.includes("OPERADOR")
+    ? "OPERADOR"
+    : location.pathname.startsWith("/gestor") && owned.includes("GESTOR")
+      ? "GESTOR"
+      : location.pathname.startsWith("/admin") && owned.includes("ADMIN")
+        ? "ADMIN"
+        : owned.includes("ADMIN")
+          ? "ADMIN"
+          : owned.includes("GESTOR")
+            ? "GESTOR"
+            : "TURISTA";
 
   const goSpace = async (rol: Rol) => {
     setOpen(false);
@@ -129,7 +143,8 @@ function ProfileMenu() {
     }
   };
 
-  const spaces = (["TURISTA", "OPERADOR", "GESTOR", "ADMIN"] as Rol[]).filter((r) => owned.includes(r));
+  // Un gestor no tiene espacio de viajero (ver Auth.has): su lista solo trae los espacios de trabajo.
+  const spaces = (["TURISTA", "OPERADOR", "GESTOR", "ADMIN"] as Rol[]).filter((r) => owned.includes(r) && !(r === "TURISTA" && owned.includes("GESTOR")));
 
   return (
     <div className="profile-menu" ref={ref}>
@@ -145,38 +160,71 @@ function ProfileMenu() {
       </button>
       {open && (
         <div className="profile-dropdown" role="menu">
-          <p>{t("nav.spaces")}</p>
-          {spaces.map((rol) => {
-            const Icon = spaceIcon[rol];
-            const selected = (rol === "TURISTA" || rol === "OPERADOR") && rol === current;
-            return (
-              <button key={rol} type="button" role="menuitem" className={selected ? "role-option selected" : "role-option"} onClick={() => goSpace(rol)}>
-                <Icon size={18} />
-                <span>{t(`nav.space.${rol}`)}</span>
-                {selected && <Check size={16} />}
-              </button>
-            );
-          })}
-          {!owned.includes("OPERADOR") && (
-            <Link to="/perfil#operador" role="menuitem" className="role-option" onClick={() => setOpen(false)}>
-              <Store size={18} />
-              <span>{t("nav.enableOperator")}</span>
+          <div className="menu-identity">
+            <span className="avatar lg" aria-hidden="true">
+              {initials(cuenta.nombre)}
+            </span>
+            <span className="menu-identity-copy">
+              <strong>{cuenta.nombre}</strong>
+              <small>{cuenta.email}</small>
+            </span>
+          </div>
+
+          {/* Con un solo espacio no hay nada que cambiar: la lista solo aparece si la cuenta tiene más de uno. */}
+          {spaces.length > 1 && (
+            <>
+              <hr className="menu-rule" />
+              <p className="menu-label" id="menu-spaces">
+                {t("nav.spaces")}
+              </p>
+              <div role="group" aria-labelledby="menu-spaces">
+                {spaces.map((rol) => {
+                  const Icon = spaceIcon[rol];
+                  const selected = (rol === "TURISTA" || rol === "OPERADOR") && rol === current;
+                  return (
+                    <button key={rol} type="button" role="menuitem" className={selected ? "menu-item selected" : "menu-item"} onClick={() => goSpace(rol)}>
+                      <Icon size={18} />
+                      <span>{t(`nav.space.${rol}`)}</span>
+                      {selected && <Check size={16} aria-label={t("nav.current")} />}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          <hr className="menu-rule" />
+          <Link to="/perfil" role="menuitem" className="menu-item" onClick={() => setOpen(false)}>
+            <UserCog size={18} />
+            <span>{t("nav.profile")}</span>
+          </Link>
+
+          {/* La invitación a ser operador es para viajeros: un gestor turístico es personal del destino y no la ve. */}
+          {!owned.includes("OPERADOR") && !owned.includes("GESTOR") && (
+            <Link to="/perfil#operador" role="menuitem" className="menu-cta" onClick={() => setOpen(false)}>
+              <span className="menu-cta-icon" aria-hidden="true">
+                <Store size={18} />
+              </span>
+              <span className="menu-cta-copy">
+                <strong>{t("nav.enableOperator")}</strong>
+                <small>{t("nav.enableOperatorHint")}</small>
+              </span>
             </Link>
           )}
-          <Link to="/perfil" role="menuitem" className="dropdown-profile" onClick={() => setOpen(false)}>
-            {t("nav.profile")} <ArrowRight size={15} />
-          </Link>
+
+          <hr className="menu-rule" />
           <button
             type="button"
             role="menuitem"
-            className="dropdown-logout"
+            className="menu-item quiet"
             onClick={async () => {
               setOpen(false);
               await logout();
               navigate("/");
             }}
           >
-            <LogOut size={16} /> {t("nav.logout")}
+            <LogOut size={18} />
+            <span>{t("nav.logout")}</span>
           </button>
         </div>
       )}
@@ -226,9 +274,16 @@ export function Header() {
               </Link>
             </div>
           )}
+          {/* En el teléfono el selector de idioma vive en este menú, no en la barra, que queda con logo, campana, avatar y menú. */}
+          <div className="nav-lang">
+            <span>{t("nav.language")}</span>
+            <LanguageToggle />
+          </div>
         </nav>
         <div className="header-actions">
-          <LanguageToggle />
+          <div className="lang-desktop">
+            <LanguageToggle />
+          </div>
           {cuenta ? (
             <>
               <Link
