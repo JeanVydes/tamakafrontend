@@ -1,13 +1,15 @@
-import { ArrowRight, Landmark, LogOut, Plus, ShieldCheck, Store, UserRound, X } from "lucide-react";
+import { ArrowLeftRight, ArrowRight, Check, Landmark, LayoutDashboard, LogOut, Plus, ShieldCheck, Sparkles, Store, UserRound, X } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cuentas, preferencias } from "../api/endpoints";
 import type { Preferencias } from "../api/types";
 import { useAuth } from "../auth/Auth";
+import { Select } from "../components/Select";
 import { useToast } from "../components/Toast";
 import { Loading, PageHeading, Pill } from "../components/ui";
 import { useI18n, type Lang } from "../i18n/I18n";
 import { day, errorText, humanize, initials } from "../lib/format";
+import { photos } from "../lib/media";
 
 const SUGGESTED = ["PLAYA", "NATURALEZA", "CULTURA", "AVENTURA", "GASTRONOMIA", "TOURS"];
 
@@ -55,9 +57,14 @@ function PreferencesCard() {
   return (
     <section className="details-card" id="intereses">
       <div className="details-header">
-        <div>
-          <h2>{t("profile.prefs")}</h2>
-          <p>{t("profile.prefsLead")}</p>
+        <div className="details-title">
+          <span className="card-icon" aria-hidden="true">
+            <Sparkles size={20} />
+          </span>
+          <div>
+            <h2>{t("profile.prefs")}</h2>
+            <p>{t("profile.prefsLead")}</p>
+          </div>
         </div>
       </div>
       <div className="chip-list">
@@ -74,14 +81,17 @@ function PreferencesCard() {
           <Plus size={16} /> {t("profile.addCategory")}
         </button>
       </form>
-      <div className="form-grid">
-        <label>
-          {t("nav.language")}
-          <select value={prefs.idioma} onChange={(e) => setPrefs({ ...prefs, idioma: e.target.value as Lang })}>
-            <option value="es">Español</option>
-            <option value="en">English</option>
-          </select>
-        </label>
+      <div className="field prefs-language">
+        <span>{t("nav.language")}</span>
+        <Select
+          ariaLabel={t("nav.language")}
+          value={prefs.idioma}
+          onChange={(v) => setPrefs({ ...prefs, idioma: v as Lang })}
+          options={[
+            { value: "es", label: "Español" },
+            { value: "en", label: "English" },
+          ]}
+        />
       </div>
       <div className="edit-actions">
         <button type="button" className="primary-button" disabled={busy} onClick={save}>
@@ -132,20 +142,39 @@ export function Profile() {
       if (modo === "OPERADOR") navigate("/operador");
     });
 
+  const hasPanels = cuenta.roles.includes("GESTOR") || cuenta.roles.includes("ADMIN") || ownsOperator;
+  // Un gestor turístico no usa las funciones de viajero (ver Auth.has): sin intereses ni rol «Viajero» a la vista.
+  const isStaff = cuenta.roles.includes("GESTOR");
+  const isTourist = cuenta.roles.includes("TURISTA") && !isStaff;
+  const shownRoles = cuenta.roles.filter((r) => !(r === "TURISTA" && isStaff));
+
   return (
     <main className="shell page narrow-page">
       <PageHeading title={t("profile.title")} lead={t("profile.lead")} />
-      <div className="profile-layout">
-        <aside className="profile-card">
+
+      <section className="profile-hero" aria-label={cuenta.nombre}>
+        <div className="profile-banner" aria-hidden="true">
+          <img src={photos.authArt} alt="" />
+        </div>
+        <div className="profile-hero-body">
           <div className="large-avatar" aria-hidden="true">
             {initials(cuenta.nombre)}
           </div>
-          <h2>{cuenta.nombre}</h2>
-          <p>{t("profile.since", { date: day(cuenta.creadaEn, lang, { day: undefined }) })}</p>
-          <Pill tone={cuenta.activa ? "ok" : "warning"}>{cuenta.activa ? t("profile.active") : t("profile.suspended")}</Pill>
+          <div className="profile-id">
+            <h2>{cuenta.nombre}</h2>
+            <p>{cuenta.email}</p>
+            <div className="pill-row">
+              {shownRoles.map((r) => (
+                <Pill key={r} tone="neutral">
+                  {t(`nav.space.${r}`)}
+                </Pill>
+              ))}
+              <Pill tone={cuenta.activa ? "ok" : "warning"}>{cuenta.activa ? t("profile.active") : t("profile.suspended")}</Pill>
+            </div>
+          </div>
           <button
             type="button"
-            className="secondary-button block"
+            className="secondary-button profile-logout"
             onClick={async () => {
               await logout();
               navigate("/");
@@ -153,79 +182,86 @@ export function Profile() {
           >
             <LogOut size={17} /> {t("nav.logout")}
           </button>
-        </aside>
+        </div>
+        <dl className="profile-stats">
+          <div>
+            <dt>{t("profile.memberSince")}</dt>
+            <dd>{day(cuenta.creadaEn, lang, { day: undefined })}</dd>
+          </div>
+          <div>
+            <dt>{t("profile.currentMode")}</dt>
+            <dd>{t(`nav.space.${isOperatorMode ? "OPERADOR" : cuenta.roles.includes("ADMIN") ? "ADMIN" : isStaff ? "GESTOR" : "TURISTA"}`)}</dd>
+          </div>
+        </dl>
+      </section>
 
-        <div className="profile-main">
-          <section className="details-card">
-            <div className="details-header">
-              <h2>{t("profile.info")}</h2>
-            </div>
-            <dl className="facts two">
-              <div>
-                <dt>{t("common.name")}</dt>
-                <dd>{cuenta.nombre}</dd>
-              </div>
-              <div>
-                <dt>{t("common.email")}</dt>
-                <dd>{cuenta.email}</dd>
-              </div>
-              <div>
-                <dt>{t("profile.roles")}</dt>
-                <dd className="pill-row">
-                  {cuenta.roles.map((r) => (
-                    <Pill key={r} tone="neutral">
-                      {t(`nav.space.${r}`)}
-                    </Pill>
-                  ))}
-                </dd>
-              </div>
-              <div>
-                <dt>{t("common.state")}</dt>
-                <dd>{cuenta.activa ? t("profile.active") : t("profile.suspended")}</dd>
-              </div>
-            </dl>
-          </section>
+      <div className={isTourist ? "profile-grid" : "profile-grid single"}>
+        {isTourist && <PreferencesCard />}
 
-          {cuenta.roles.includes("TURISTA") && <PreferencesCard />}
-
+        <div className="profile-side">
+          {/* Habilitar el modo operador es para viajeros: a un gestor turístico no se le ofrece. */}
+          {(ownsOperator || !isStaff) && (
           <section className="details-card" id="operador">
             {ownsOperator ? (
               <>
                 <div className="details-header">
-                  <div>
-                    <h2>{t("profile.modes")}</h2>
-                    <p>{isOperatorMode ? t("profile.modeOperator") : t("profile.modeTourist")}</p>
+                  <div className="details-title">
+                    <span className="card-icon" aria-hidden="true">
+                      <ArrowLeftRight size={20} />
+                    </span>
+                    <div>
+                      <h2>{t("profile.modes")}</h2>
+                      <p>{isOperatorMode ? t("profile.modeOperator") : t("profile.modeTourist")}</p>
+                    </div>
                   </div>
                 </div>
                 <div className="mode-switch">
                   <button type="button" className={!isOperatorMode ? "mode on" : "mode"} disabled={busy || !isOperatorMode} onClick={() => switchMode("TURISTA")}>
-                    <UserRound size={20} /> {t("nav.space.TURISTA")}
+                    <UserRound size={20} /> <span>{t("nav.space.TURISTA")}</span>
+                    {!isOperatorMode && <Check size={17} aria-label={t("nav.current")} />}
                   </button>
                   <button type="button" className={isOperatorMode ? "mode on" : "mode"} disabled={busy || isOperatorMode} onClick={() => switchMode("OPERADOR")}>
-                    <Store size={20} /> {t("nav.space.OPERADOR")}
+                    <Store size={20} /> <span>{t("nav.space.OPERADOR")}</span>
+                    {isOperatorMode && <Check size={17} aria-label={t("nav.current")} />}
                   </button>
                 </div>
               </>
             ) : (
-              <div className="operator-invite">
-                <span className="metric-icon coral">
-                  <Store />
-                </span>
-                <div>
-                  <h2>{t("profile.operatorTitle")}</h2>
-                  <p>{t("profile.operatorLead")}</p>
+              <>
+                <div className="details-header">
+                  <div className="details-title">
+                    <span className="card-icon" aria-hidden="true">
+                      <Store size={20} />
+                    </span>
+                    <div>
+                      <h2>{t("profile.operatorTitle")}</h2>
+                      <p>{t("profile.operatorLead")}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="operator-invite">
                   <p className="muted">{t("profile.operatorSteps")}</p>
                   <button type="button" className="primary-button" disabled={busy} onClick={enableOperator}>
                     {t("profile.operatorEnable")}
                   </button>
                 </div>
-              </div>
+              </>
             )}
           </section>
+          )}
 
-          {(cuenta.roles.includes("GESTOR") || cuenta.roles.includes("ADMIN") || ownsOperator) && (
+          {hasPanels && (
             <section className="details-card">
-              <h2>{t("profile.panels")}</h2>
+              <div className="details-header">
+                <div className="details-title">
+                  <span className="card-icon" aria-hidden="true">
+                    <LayoutDashboard size={20} />
+                  </span>
+                  <div>
+                    <h2>{t("profile.panels")}</h2>
+                  </div>
+                </div>
+              </div>
               <div className="panel-links">
                 {ownsOperator && (
                   <Link to="/operador">

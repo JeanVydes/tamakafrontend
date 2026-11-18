@@ -9,6 +9,8 @@ const u = (id: string, w = 900) =>
 
 export const photos = {
   hero: u("1754380578738-4fcf22068034", 2000),
+  // Panel de acceso: Parque Tayrona (Santa Marta), en alta resolución para un panel de media pantalla.
+  authArt: u("1612815867823-85cf0957890b", 1500),
   beach: u("1787411733658-8596a6e4b86f"),
   coast: u("1629905333701-460292c863a1"),
   island: u("1781036150515-1578cd1a55ef"),
