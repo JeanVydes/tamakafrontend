@@ -94,7 +94,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       cuenta,
       roles,
       ready,
-      has: (rol) => roles.includes(rol),
+      // Un gestor turístico es personal del destino: su cuenta conserva el rol TURISTA (todas lo reciben al registrarse),
+      // pero no usa las funciones de viajero —reservas, favoritos, recomendaciones—, así que la interfaz no se las ofrece.
+      has: (rol) => roles.includes(rol) && !(rol === "TURISTA" && roles.includes("GESTOR")),
       login,
       register,
       logout,
