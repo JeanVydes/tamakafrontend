@@ -31,12 +31,13 @@ export function Explore() {
     setParams(next, { replace: true });
   };
 
-  // Atractivos y comercios filtran por texto en el servidor; eventos no tiene búsqueda, se filtra aquí.
+  // El texto se filtra aquí y no en el servidor: la búsqueda del backend distingue tildes («bahia» no encuentra
+  // «Bahía») y cada escritura sería una petición nueva. Los listados son pequeños (el backend no pagina).
   const data = useAsync<Atractivo[] | Comercio[] | Evento[]>(() => {
-    if (tab === "atractivos") return atractivos.buscar(q || undefined);
-    if (tab === "comercios") return comercios.buscar({ q: q || undefined });
+    if (tab === "atractivos") return atractivos.buscar();
+    if (tab === "comercios") return comercios.buscar({});
     return eventos.listar(desde);
-  }, [tab, q, desde]);
+  }, [tab, desde]);
 
   const all = data.data ?? [];
   const categories = useMemo(() => [...new Set(all.map((x) => x.categoria).filter(Boolean))].sort(), [all]);
@@ -45,9 +46,15 @@ export function Explore() {
     let list = all as (Atractivo | Comercio | Evento)[];
     if (categoria) list = list.filter((x) => x.categoria === categoria);
     if (tab === "atractivos" && estado) list = (list as Atractivo[]).filter((x) => x.estado === estado);
-    if (tab === "eventos" && q) {
-      const nq = norm(q);
-      list = (list as Evento[]).filter((e) => norm(`${e.titulo} ${e.lugar} ${e.descripcion ?? ""}`).includes(nq));
+    if (q) {
+      // Todas las palabras deben aparecer en nombre, categoría, lugar o descripción (sin tildes ni mayúsculas).
+      const words = norm(q).split(/\s+/).filter(Boolean);
+      list = list.filter((x) => {
+        const hay = norm(
+          [("nombre" in x ? x.nombre : x.titulo), x.categoria, "lugar" in x ? x.lugar : "", "rnt" in x ? x.rnt : "", x.descripcion ?? ""].join(" "),
+        );
+        return words.every((w) => hay.includes(w));
+      });
     }
     return list;
   }, [all, categoria, estado, q, tab]);
@@ -59,7 +66,7 @@ export function Explore() {
     <main className="shell page">
       <PageHeading title={t("explore.title")} lead={t("explore.lead")} />
       <div className="explore-search">
-        <SearchBox key={q} compact initial={q} placeholder={t("explore.searchPlaceholder")} onSearch={(v) => update({ q: v || null })} />
+        <SearchBox compact initial={q} placeholder={t("explore.searchPlaceholder")} onSearch={(v) => update({ q: v || null })} />
       </div>
       <Segmented
         label={t("explore.title")}

@@ -1,4 +1,4 @@
-import { ArrowLeft, BadgeCheck, CalendarDays, Info, MapPin, Search, ShieldAlert, TriangleAlert, Users } from "lucide-react";
+import { ArrowLeft, BadgeCheck, CalendarDays, MapPin, Search, TriangleAlert, Users } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { atractivos, comercios, eventos, reservas } from "../api/endpoints";
@@ -64,16 +64,16 @@ export function AtractivoDetail() {
             <p>{note}</p>
           </section>
           <section className="panel-card">
-            <h2>
-              <ShieldAlert size={18} /> {t("detail.alerts")}
-            </h2>
+            <h2>{t("detail.alerts")}</h2>
             {a.alertasRecientes.length === 0 ? (
               <p className="muted">{t("detail.noAlerts")}</p>
             ) : (
               <ul className="alert-list">
                 {a.alertasRecientes.map((al) => (
                   <li key={al.id}>
-                    <TriangleAlert size={18} />
+                    <span className="alert-icon" aria-hidden="true">
+                      <TriangleAlert size={16} />
+                    </span>
                     <div>
                       <p>{al.mensaje}</p>
                       <time dateTime={al.emitidaEn}>{dateTime(al.emitidaEn, lang)}</time>
@@ -84,9 +84,7 @@ export function AtractivoDetail() {
             )}
           </section>
           <section className="panel-card">
-            <h2>
-              <Info size={18} /> {t("detail.recommendations")}
-            </h2>
+            <h2>{t("detail.recommendations")}</h2>
             <p className="muted">{t("detail.recoDefault")}</p>
           </section>
         </aside>
@@ -197,9 +195,11 @@ export function ComercioDetail() {
                         <dd>{t("detail.capacity", { min: s.minPersonas, max: s.maxPersonas })}</dd>
                       </div>
                     </dl>
-                    <button type="button" className="primary-button" onClick={() => book(s)}>
-                      {t("detail.request")}
-                    </button>
+                    {(!cuenta || has("TURISTA")) && (
+                      <button type="button" className="primary-button" onClick={() => book(s)}>
+                        {t("detail.request")}
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>

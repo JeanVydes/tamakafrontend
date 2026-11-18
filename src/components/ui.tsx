@@ -139,6 +139,8 @@ export function FavButton({ tipo, refId, className = "save-button" }: { tipo: Ti
   const fav = useFavorites();
   const toast = useToast();
   const on = fav.isFav(tipo, refId);
+  // Con sesión pero sin rol de viajero (un gestor, o un operador en su modo) los favoritos no existen: no se ofrece el corazón.
+  if (cuenta && !fav.enabled) return null;
   return (
     <button
       type="button"

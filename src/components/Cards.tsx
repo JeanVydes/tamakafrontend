@@ -24,13 +24,14 @@ export function AtractivoCard({ a }: { a: Atractivo }) {
       <Link to={`/atractivos/${a.id}`} className="card-link">
         <div className="card-image">
           <CardImage src={photoFor(`${a.nombre} ${a.categoria}`, a.id)} alt="" category={a.categoria} />
+          {/* El aviso va sobre la foto y no en el flujo: así ninguna tarjeta crece ni desalinea a sus vecinas. */}
+          {a.estado !== "ABIERTO" && (
+            <span className="state-chip">
+              {t(`estado.${a.estado}`)}
+              <span className="sr-only">. {a.estado === "CERRADO" ? t("detail.closedNote") : t("detail.restrictedNote")}</span>
+            </span>
+          )}
         </div>
-        {a.estado !== "ABIERTO" && (
-          <p className="state-banner">
-            <EstadoPill estado={a.estado} />
-            <small>{a.estado === "CERRADO" ? t("detail.closedNote") : t("detail.restrictedNote")}</small>
-          </p>
-        )}
         <div className="card-body">
           <h3>{a.nombre}</h3>
           <p className="card-meta">

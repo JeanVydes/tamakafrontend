@@ -1,5 +1,5 @@
 import { ArrowRight, BadgeCheck, CalendarClock, HandCoins, Leaf, Search, Send } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { atractivos, comercios, eventos } from "../api/endpoints";
 import { AtractivoCard, ComercioCard, EventoCard } from "../components/Cards";
@@ -13,9 +13,31 @@ import { photos } from "../lib/media";
 export function SearchBox({ placeholder, initial = "", compact = false, onSearch }: { placeholder: string; initial?: string; compact?: boolean; onSearch: (q: string) => void }) {
   const { t } = useI18n();
   const [q, setQ] = useState(initial);
+  const sent = useRef(initial.trim());
+
+  const send = (value: string) => {
+    sent.current = value.trim();
+    onSearch(sent.current);
+  };
+
+  // Si el valor cambia desde fuera (p. ej. «Limpiar filtros»), el campo lo refleja; lo que uno mismo envió no se pisa.
+  useEffect(() => {
+    if (initial.trim() !== sent.current) {
+      sent.current = initial.trim();
+      setQ(initial);
+    }
+  }, [initial]);
+
+  // En el modo compacto (Explorar) el resultado se actualiza mientras se escribe, con una pausa corta.
+  useEffect(() => {
+    if (!compact || q.trim() === sent.current) return;
+    const id = window.setTimeout(() => send(q), 300);
+    return () => window.clearTimeout(id);
+  }, [q, compact]);
+
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    onSearch(q.trim());
+    send(q);
   };
   return (
     <form className={compact ? "search-box compact" : "search-box"} onSubmit={submit} role="search">
