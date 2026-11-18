@@ -40,7 +40,7 @@ node scripts/seed-demo.mjs
 ```
 
 Crea atractivos con estados y alertas, eventos, un comercio con servicios y reservas en varios estados. Los roles
-GESTOR y ADMIN se insertan en la base local con `docker exec infra-postgres-1 psql` (no hay API para el primer
+GESTOR y ADMIN se insertan en la base local con `docker exec <contenedor de postgres> psql` (lo localiza solo) (no hay API para el primer
 admin). Contraseña de todas las cuentas de prueba: `Tamaka2026!`
 
 | Cuenta | Roles |

@@ -8,7 +8,7 @@
 //   PAGOS_WEBHOOK_SECRET=... node scripts/seed-demo.mjs   # con TAMAKA_PAGOS_APROBACION_AUTOMATICA=false, aprueba por webhook
 //
 // Los roles ADMIN y GESTOR no se pueden asignar por la API sin un admin previo, así que el script los
-// inserta en la base local con `docker exec infra-postgres-1 psql` (solo entorno de desarrollo).
+// inserta en la base local con `docker exec <contenedor de postgres> psql` (solo entorno de desarrollo).
 //
 // Cuentas de prueba (contraseña común: Tamaka2026!):
 //   viajero@tamaka.test   Turista
@@ -53,7 +53,21 @@ async function account(email, nombre) {
 function grantRoles(email, roles) {
   const values = roles.map((r) => `((SELECT id FROM cuentas.cuenta WHERE email='${email}'),'${r}')`).join(",");
   const sql = `INSERT INTO cuentas.cuenta_rol (cuenta_id, rol) VALUES ${values} ON CONFLICT DO NOTHING;`;
-  execFileSync("docker", ["exec", "infra-postgres-1", "psql", "-U", "tamaka_admin", "-d", "tamaka", "-c", sql], { stdio: "pipe" });
+  execFileSync("docker", ["exec", postgresContainer(), "psql", "-U", "tamaka_admin", "-d", "tamaka", "-c", sql], { stdio: "pipe" });
+}
+
+// El nombre del contenedor depende de la carpeta del clon (backend-postgres-1, tamakabackend-postgres-1...):
+// se localiza por la etiqueta del servicio de Docker Compose. TAMAKA_POSTGRES_CONTAINER lo fuerza a mano.
+let postgres;
+function postgresContainer() {
+  if (postgres) return postgres;
+  postgres =
+    process.env.TAMAKA_POSTGRES_CONTAINER ||
+    execFileSync("docker", ["ps", "--filter", "label=com.docker.compose.service=postgres", "--format", "{{.Names}}"], { encoding: "utf8" })
+      .split(/\r?\n/)
+      .find(Boolean);
+  if (!postgres) throw new Error("No encuentro el contenedor de Postgres: ¿está levantado el backend? (o defina TAMAKA_POSTGRES_CONTAINER)");
+  return postgres;
 }
 
 const log = (...a) => console.log("·", ...a);
