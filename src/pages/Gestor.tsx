@@ -3,6 +3,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import { atractivos, eventos, indicadores, type EventoInput } from "../api/endpoints";
 import type { EstadoAtractivo, Evento } from "../api/types";
 import { useAuth } from "../auth/Auth";
+import { CategoryField, normalizeCategory } from "../components/CategoryField";
+import { Select } from "../components/Select";
 import { useToast } from "../components/Toast";
 import { EmptyState, ErrorState, Loading, PageHeading, Pill } from "../components/ui";
 import { useI18n } from "../i18n/I18n";
@@ -11,6 +13,7 @@ import { useAsync } from "../lib/hooks";
 import { Bars } from "./Operator";
 
 const ESTADOS: EstadoAtractivo[] = ["ABIERTO", "RESTRINGIDO", "CERRADO"];
+const ATTR_CATS = ["PLAYA", "NATURALEZA", "CULTURA", "AREA_PROTEGIDA", "MIRADOR", "HISTORICO"] as const;
 
 // ---------- Atractivos ----------
 
@@ -35,12 +38,16 @@ export function GestorAttractions() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!form.categoria.trim()) {
+      setErr(t("cat.required"));
+      return;
+    }
     setBusy(true);
     setErr("");
     try {
       const a = await atractivos.crear({
         nombre: form.nombre.trim(),
-        categoria: form.categoria.trim().toUpperCase(),
+        categoria: normalizeCategory(form.categoria),
         descripcion: form.descripcion.trim() || undefined,
       });
       list.setData((l) => [...(l ?? []), a]);
@@ -73,17 +80,14 @@ export function GestorAttractions() {
               {t("common.name")}
               <input required maxLength={150} value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
             </label>
-            <label>
-              {t("common.category")}
-              <input required maxLength={60} list="attr-cats" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} />
-              <datalist id="attr-cats">
-                {["PLAYA", "NATURALEZA", "CULTURA", "AREA_PROTEGIDA", "MIRADOR", "HISTORICO"].map((c) => (
-                  <option key={c} value={c} />
-                ))}
-              </datalist>
-            </label>
+            <CategoryField
+              label={t("common.category")}
+              value={form.categoria}
+              onChange={(v) => setForm({ ...form, categoria: v })}
+              options={ATTR_CATS.map((c) => ({ value: c, label: t(`cat.${c}`) }))}
+            />
             <label className="span-2">
-              {t("common.description")} <span className="muted">({t("common.optional")})</span>
+              <span>{t("common.description")} <span className="muted">({t("common.optional")})</span></span>
               <textarea rows={3} maxLength={2000} value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} />
             </label>
           </div>
@@ -186,14 +190,14 @@ export function GestorAlerts() {
           <div className="form-stack">
             <label>
               {t("ge.alertTarget")}
-              <select required value={target} onChange={(e) => setTarget(e.target.value)} disabled={list.loading}>
-                <option value="">{t("ge.chooseAttraction")}</option>
-                {(list.data ?? []).map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.nombre} · {t(`estado.${a.estado}`)}
-                  </option>
-                ))}
-              </select>
+              <Select
+                ariaLabel={t("ge.alertTarget")}
+                value={target}
+                onChange={setTarget}
+                disabled={list.loading}
+                placeholder={t("ge.chooseAttraction")}
+                options={(list.data ?? []).map((a) => ({ value: String(a.id), label: `${a.nombre} · ${t(`estado.${a.estado}`)}` }))}
+              />
             </label>
             <label>
               {t("ge.alertMessage")}
@@ -327,11 +331,11 @@ export function GestorEvents() {
               <input required type="date" min={form.fechaInicio} value={form.fechaFin} onChange={(e) => setForm({ ...form, fechaFin: e.target.value })} />
             </label>
             <label>
-              {t("common.category")} <span className="muted">({t("common.optional")})</span>
+              <span>{t("common.category")} <span className="muted">({t("common.optional")})</span></span>
               <input maxLength={60} value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} />
             </label>
             <label className="span-2">
-              {t("common.description")} <span className="muted">({t("common.optional")})</span>
+              <span>{t("common.description")} <span className="muted">({t("common.optional")})</span></span>
               <textarea rows={3} maxLength={2000} value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} />
             </label>
           </div>

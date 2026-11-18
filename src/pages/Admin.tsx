@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { admin, comercios } from "../api/endpoints";
 import type { Cuenta, EstadoPago, EstadoReserva, Rol } from "../api/types";
+import { Select } from "../components/Select";
 import { useToast } from "../components/Toast";
 import { EmptyState, ErrorState, Loading, PageHeading, Pill, ReservaPill } from "../components/ui";
 import { useI18n } from "../i18n/I18n";
@@ -43,22 +44,25 @@ export function AdminAccounts() {
         </label>
         <label>
           <span className="sr-only">{t("common.role")}</span>
-          <select value={rol} onChange={(e) => setRol(e.target.value)}>
-            <option value="">{t("ad.anyRole")}</option>
-            {ROLES.map((r) => (
-              <option key={r} value={r}>
-                {t(`nav.space.${r}`)}
-              </option>
-            ))}
-          </select>
+          <Select
+            ariaLabel={t("common.role")}
+            value={rol}
+            onChange={setRol}
+            options={[{ value: "", label: t("ad.anyRole") }, ...ROLES.map((r) => ({ value: r, label: t(`nav.space.${r}`) }))]}
+          />
         </label>
         <label>
           <span className="sr-only">{t("common.state")}</span>
-          <select value={estado} onChange={(e) => setEstado(e.target.value)}>
-            <option value="">{t("ad.anyState")}</option>
-            <option value="activa">{t("ad.active")}</option>
-            <option value="suspendida">{t("ad.suspended")}</option>
-          </select>
+          <Select
+            ariaLabel={t("common.state")}
+            value={estado}
+            onChange={setEstado}
+            options={[
+              { value: "", label: t("ad.anyState") },
+              { value: "activa", label: t("ad.active") },
+              { value: "suspendida", label: t("ad.suspended") },
+            ]}
+          />
         </label>
       </div>
       <section className="data-card">
@@ -193,7 +197,7 @@ export function AdminAccountDetail() {
             {c.activa ? (
               <>
                 <label>
-                  {t("ad.reason")} <span className="muted">({t("common.optional")})</span>
+                  <span>{t("ad.reason")} <span className="muted">({t("common.optional")})</span></span>
                   <textarea rows={2} maxLength={300} value={motivo} onChange={(e) => setMotivo(e.target.value)} />
                   <small>{t("ad.suspendNote")}</small>
                 </label>

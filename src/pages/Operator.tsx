@@ -6,6 +6,8 @@ import { ApiError } from "../api/http";
 import type { Comercio, Reserva, Servicio } from "../api/types";
 import { useAuth } from "../auth/Auth";
 import { JourneyRail } from "../components/JourneyRail";
+import { CategoryField, normalizeCategory } from "../components/CategoryField";
+import { Select } from "../components/Select";
 import { useToast } from "../components/Toast";
 import { Dialog, EmptyState, ErrorState, Loading, PageHeading, PagoPill, Pill, ReservaPill, Segmented } from "../components/ui";
 import { useI18n } from "../i18n/I18n";
@@ -117,6 +119,8 @@ export function OperatorOverview() {
 
 const emptyBiz = { nombre: "", rnt: "", categoria: "", descripcion: "" };
 
+const BIZ_CATS = ["ALOJAMIENTO", "TOURS", "GASTRONOMIA", "NATURALEZA", "AVENTURA", "TRANSPORTE"] as const;
+
 export function OperatorBusinesses() {
   const { t } = useI18n();
   const toast = useToast();
@@ -134,10 +138,14 @@ export function OperatorBusinesses() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!form.categoria.trim()) {
+      setErr(t("cat.required"));
+      return;
+    }
     setBusy(true);
     setErr("");
     try {
-      const body = { nombre: form.nombre.trim(), categoria: form.categoria.trim().toUpperCase(), descripcion: form.descripcion.trim() || undefined };
+      const body = { nombre: form.nombre.trim(), categoria: normalizeCategory(form.categoria), descripcion: form.descripcion.trim() || undefined };
       if (editing === "new") await comercios.crear({ ...body, rnt: form.rnt.trim() });
       else if (editing) await comercios.actualizar(editing.id, body);
       toast(t("common.saved"));
@@ -222,17 +230,15 @@ export function OperatorBusinesses() {
               {t("op.rnt")}
               <input required maxLength={50} disabled={editing !== "new"} value={form.rnt} onChange={(e) => setForm({ ...form, rnt: e.target.value })} />
             </label>
-            <label>
-              {t("common.category")}
-              <input required maxLength={60} list="biz-cats" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} />
-              <datalist id="biz-cats">
-                {["ALOJAMIENTO", "TOURS", "GASTRONOMIA", "NATURALEZA", "AVENTURA", "TRANSPORTE"].map((c) => (
-                  <option key={c} value={c} />
-                ))}
-              </datalist>
-            </label>
+            <CategoryField
+              key={editing === "new" ? "new" : editing.id}
+              label={t("common.category")}
+              value={form.categoria}
+              onChange={(v) => setForm({ ...form, categoria: v })}
+              options={BIZ_CATS.map((c) => ({ value: c, label: t(`cat.${c}`) }))}
+            />
             <label className="span-2">
-              {t("common.description")} <span className="muted">({t("common.optional")})</span>
+              <span>{t("common.description")} <span className="muted">({t("common.optional")})</span></span>
               <textarea maxLength={1000} rows={3} value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} />
             </label>
           </div>
@@ -337,13 +343,12 @@ export function OperatorServices() {
       />
       <label className="inline-select">
         {t("op.svcBusiness")}
-        <select value={selected} onChange={(e) => setParams({ comercio: e.target.value }, { replace: true })}>
-          {mine.data.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.nombre}
-            </option>
-          ))}
-        </select>
+        <Select
+          ariaLabel={t("op.svcBusiness")}
+          value={String(selected)}
+          onChange={(v) => setParams({ comercio: v }, { replace: true })}
+          options={mine.data.map((c) => ({ value: String(c.id), label: c.nombre }))}
+        />
       </label>
       <section className="data-card">
         {detail.loading ? (
@@ -517,7 +522,7 @@ function DecisionForm({ d, onDone }: { d: NonNullable<Decision>; onDone: (change
         </label>
       )}
       <label>
-        {d.kind === "cancel" ? t("op.cancelReason") : t("op.observation")} <span className="muted">({t("common.optional")})</span>
+        <span>{d.kind === "cancel" ? t("op.cancelReason") : t("op.observation")} <span className="muted">({t("common.optional")})</span></span>
         <textarea rows={3} maxLength={d.kind === "cancel" ? 300 : 500} value={obs} onChange={(e) => setObs(e.target.value)} />
       </label>
       {err && <p className="form-error" role="alert">{err}</p>}
