@@ -212,6 +212,72 @@ if (!dive) {
 }
 await ensureImage("comercios", dive, PHOTOS.coast, operadorToken);
 
+// --- 4b. Comercios adicionales -------------------------------------------
+const extraComercios = [
+  {
+    nombre: "Senderos de la Sierra",
+    categoria: "TOURS",
+    rnt: `RNT-TREK-${me.id}`,
+    descripcion: "Operador de trekking en la Sierra Nevada: Ciudad Perdida, Pozo Azul y senderos con guías locales certificados.",
+    foto: PHOTOS.sierra,
+    servicios: [
+      ["Trekking Ciudad Perdida (4 días)", 1850000, 2, 8, PHOTOS.sierra],
+      ["Pozo Azul y cascadas de Minca", 95000, 2, 10, PHOTOS.birds],
+      ["Trekking nocturno a la Sierra", 140000, 2, 8, PHOTOS.aerial],
+    ],
+  },
+  {
+    nombre: "Sábana Gourmet",
+    categoria: "GASTRONOMIA",
+    rnt: `RNT-REST-${me.id}`,
+    descripcion: "Restaurante y bar de cocina criolla caribeña a 15 minutos del Rodadero: almuerzos del día, tours de cacao y cena maridaje.",
+    foto: PHOTOS.hero,
+    servicios: [
+      ["Almuerzo criollo del día", 45000, 1, 20, PHOTOS.coast],
+      ["Tour de chocolate y cacao", 60000, 4, 12, PHOTOS.island],
+      ["Cena maridaje 7 tiempos (viernes)", 210000, 2, 10, PHOTOS.hero],
+    ],
+  },
+  {
+    nombre: "Tayrona Rentas",
+    categoria: "TRANSPORTE",
+    rnt: `RNT-RENT-${me.id}`,
+    descripcion: "Lanchas, 4x4 y motos para Tayrona, El Rodadero y Taganga. Salidas programadas y vuelta garantizada.",
+    foto: PHOTOS.aerial,
+    servicios: [
+      ["Lancha a Playa Blanca (ida y vuelta)", 130000, 1, 12, PHOTOS.beach],
+      ["4x4 a Tayrona con guía", 350000, 1, 6, PHOTOS.aerial],
+      ["Moto por la ciudad (día)", 80000, 1, 2, PHOTOS.coast],
+    ],
+  },
+];
+for (const eco of extraComercios) {
+  let c = comercios.find((x) => x.operadorId === me.id && x.nombre === eco.nombre);
+  if (!c) {
+    c = ok(
+      await call("POST", "/api/comercios", {
+        token: operadorToken,
+        body: { nombre: eco.nombre, rnt: eco.rnt, categoria: eco.categoria, descripcion: eco.descripcion },
+      }),
+      eco.nombre,
+    );
+    log(`comercio creado: ${eco.nombre} (#${c.id})`);
+    comercios.push(c);
+  }
+  await ensureImage("comercios", c, eco.foto, operadorToken);
+  const detail = ok(await call("GET", `/api/comercios/${c.id}`), `detalle ${c.id}`);
+  for (const [nombre, precioBase, minPersonas, maxPersonas, foto] of eco.servicios) {
+    let svc = detail.servicios.find((s) => s.nombre === nombre);
+    if (!svc) {
+      svc = ok(await call("POST", `/api/comercios/${c.id}/servicios`, { token: operadorToken, body: { nombre, precioBase, minPersonas, maxPersonas } }), nombre);
+      log(`servicio creado: ${nombre}`);
+      detail.servicios.push(svc);
+    }
+    await ensureImage("servicios", svc, foto, operadorToken);
+  }
+}
+
+
 const sierraServices = [
   ["Caminata a las cascadas de Minca", 120000, 2, 10, PHOTOS.sierra],
   ["Tour en lancha a Playa Blanca", 85000, 1, 12, PHOTOS.island],
