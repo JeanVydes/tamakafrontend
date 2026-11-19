@@ -8,7 +8,8 @@
 //   PAGOS_WEBHOOK_SECRET=... node scripts/seed-demo.mjs   # con TAMAKA_PAGOS_APROBACION_AUTOMATICA=false, aprueba por webhook
 //
 // Los roles ADMIN y GESTOR no se pueden asignar por la API sin un admin previo, así que el script los
-// inserta en la base local con `docker exec <contenedor de postgres> psql` (solo entorno de desarrollo).
+// inserta en la base con `docker exec <contenedor de postgres> psql` (solo entorno de desarrollo).
+// TAMAKA_SKIP_DOCKER=1 omite la inserción de roles (p. ej. cuando el SQL se corre fuera, dentro del servidor).
 //
 // Cuentas de prueba (contraseña común: Tamaka2026!):
 //   viajero@tamaka.test   Turista
@@ -51,6 +52,9 @@ async function account(email, nombre) {
 }
 
 function grantRoles(email, roles) {
+  // TAMAKA_SKIP_DOCKER=1: omitir la inserción de roles (p. ej. cuando el SQL se corre fuera,
+  // dentro de la EC2/otro host). Asume que los roles YA fueron insertados.
+  if (process.env.TAMAKA_SKIP_DOCKER === "1") return log(`roles omitidos por TAMAKA_SKIP_DOCKER (${roles.join(",")})`);
   const values = roles.map((r) => `((SELECT id FROM cuentas.cuenta WHERE email='${email}'),'${r}')`).join(",");
   const sql = `INSERT INTO cuentas.cuenta_rol (cuenta_id, rol) VALUES ${values} ON CONFLICT DO NOTHING;`;
   execFileSync("docker", ["exec", postgresContainer(), "psql", "-U", "tamaka_admin", "-d", "tamaka", "-c", sql], { stdio: "pipe" });
