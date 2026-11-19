@@ -31,15 +31,22 @@ export function Explore() {
     setParams(next, { replace: true });
   };
 
+  // useAsync conserva la lista anterior mientras carga la nueva: sin este guarda, al cambiar de
   // El texto se filtra aquí y no en el servidor: la búsqueda del backend distingue tildes («bahia» no encuentra
   // «Bahía») y cada escritura sería una petición nueva. Los listados son pequeños (el backend no pagina).
-  const data = useAsync<Atractivo[] | Comercio[] | Evento[]>(() => {
-    if (tab === "atractivos") return atractivos.buscar();
-    if (tab === "comercios") return comercios.buscar({});
-    return eventos.listar(desde);
+  // useAsync conserva la lista anterior mientras carga la nueva: sin este guarda, al cambiar de
+  // pestaña se pintan tarjetas con la lista del tipo equivocado (p. ej. Comercio sin `estado`
+  // tipado como Atractivo -> estado.toLowerCase() rompe todo el árbol).
+  const data = useAsync(async () => {
+    if (tab === "atractivos") return { tab, items: await atractivos.buscar() };
+    if (tab === "comercios") return { tab, items: await comercios.buscar({}) };
+    return { tab, items: await eventos.listar(desde) };
   }, [tab, desde]);
+  const fresh = data.data && data.data.tab === tab ? data.data.items : undefined;
+  // Sin datos frescos no se pinta nada de otra pestaña; con error se muestra ErrorState.
+  const loading = data.loading || (!fresh && !data.error);
 
-  const all = data.data ?? [];
+  const all = fresh ?? [];
   const categories = useMemo(() => [...new Set(all.map((x) => x.categoria).filter(Boolean))].sort(), [all]);
 
   const items = useMemo(() => {
@@ -119,7 +126,7 @@ export function Explore() {
         </aside>
 
         <section aria-live="polite">
-          {data.loading ? (
+          {loading ? (
             <Loading />
           ) : data.error ? (
             <ErrorState error={data.error} onRetry={data.reload} />
