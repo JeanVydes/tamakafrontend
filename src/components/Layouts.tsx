@@ -2,6 +2,7 @@ import { ArrowLeft, LockKeyhole, Store, type LucideIcon } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { cuentas } from "../api/endpoints";
+import { devModeEnabled, setDevMode } from "../api/devMode";
 import type { Rol } from "../api/types";
 import { useAuth } from "../auth/Auth";
 import { useI18n } from "../i18n/I18n";
@@ -13,6 +14,7 @@ import { EmptyState, Loading } from "./ui";
 function Footer() {
   const { t } = useI18n();
   const { cuenta } = useAuth();
+  const [dev, setDev] = useState(() => devModeEnabled());
   // Un gestor turístico no se hace operador: el enlace «Ser operador» no se le ofrece.
   const offerOperator = !cuenta?.roles.includes("GESTOR");
   return (
@@ -35,6 +37,27 @@ function Footer() {
       </div>
       <div className="shell footer-bottom">
         <span>{t("footer.rights", { year: new Date().getFullYear() })}</span>
+        <div className="footer-bottom-end">
+          {dev && <span className="dev-url">dev-api.taminaka.com</span>}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={dev}
+            className={`dev-switch${dev ? " on" : ""}`}
+            title={t("footer.devApi")}
+            aria-label={t("footer.devApi")}
+            onClick={() => {
+              const next = !dev;
+              setDevMode(next);
+              setDev(next);
+              // Recarga: toda la sesión HTTP queda coherente con el nuevo origen del API.
+              window.location.reload();
+            }}
+          >
+            <span className="dev-dot" aria-hidden="true" />
+            dev
+          </button>
+        </div>
       </div>
     </footer>
   );

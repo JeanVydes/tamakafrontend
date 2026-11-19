@@ -1,6 +1,10 @@
 // Cliente HTTP del gateway: añade el access token, renueva con el refresh token ante un 401
 // (una sola renovación en vuelo) y traduce el ErrorResponse del backend a ApiError.
 
+// Interruptor «dev» del pie de pagina (ver devMode.ts): apunta el cliente al API de desarrollo
+// (https://dev-api.taminaka.com) sin redesplegar ni tocar variables de entorno.
+import { devApiBase, devModeEnabled } from "./devMode";
+
 export interface Tokens {
   accessToken: string;
   refreshToken: string;
@@ -31,6 +35,10 @@ export class ApiError extends Error {
 // https://api.taminaka.com, basta definir VITE_API_BASE_URL=https://api.taminaka.com y quitar
 // el rewrite.
 const API_BASE = ((import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "").replace(/\/+$/, "");
+
+// Modo dev del API (ver devMode.ts): con el interruptor «dev» del pie activo, las peticiones
+// van absolutas a https://dev-api.taminaka.com en vez de mismo-origen.
+const apiBase = () => (devModeEnabled() ? devApiBase() : API_BASE);
 
 const STORAGE_KEY = "tamaka.tokens";
 type Listener = (tokens: Tokens | null) => void;
@@ -93,7 +101,7 @@ async function refresh(): Promise<boolean> {
   if (!refreshing) {
     refreshing = (async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/auth/refresh`, {
+        const res = await fetch(`${apiBase()}/api/auth/refresh`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ refreshToken: current.refreshToken }),
@@ -153,7 +161,7 @@ export async function api<T>(path: string, { method = "GET", body, auth = true }
     const headers: Record<string, string> = { Accept: "application/json" };
     if (body !== undefined) headers["Content-Type"] = "application/json";
     if (auth && tokens) headers.Authorization = `Bearer ${tokens.accessToken}`;
-    return fetch(`${API_BASE}/api${path}`, {
+    return fetch(`${apiBase()}/api${path}`, {
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -173,7 +181,7 @@ export async function apiForm<T>(path: string, { method = "POST", formData, auth
   const send = () => {
     const headers: Record<string, string> = { Accept: "application/json" };
     if (auth && tokens) headers.Authorization = `Bearer ${tokens.accessToken}`;
-    return fetch(`${API_BASE}/api${path}`, {
+    return fetch(`${apiBase()}/api${path}`, {
       method,
       headers,
       body: formData,

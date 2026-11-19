@@ -447,7 +447,7 @@ export const es = {
   "footer.responsible": "Turismo responsable",
   "footer.beOperator": "Ser operador",
   "footer.rights": "© {year} TAMAKA. Universidad del Magdalena.",
-
+  "footer.devApi": "Modo dev: apunta el API a dev-api.taminaka.com",
   "notFound.title": "Esta página no existe",
   "notFound.lead": "Puede que el enlace esté roto o que la página se haya movido.",
 };
@@ -883,6 +883,7 @@ export const en: Record<MessageKey, string> = {
   "footer.responsible": "Responsible travel",
   "footer.beOperator": "Become an operator",
   "footer.rights": "© {year} TAMAKA. Universidad del Magdalena.",
+  "footer.devApi": "Dev mode: point the API at dev-api.taminaka.com",
 
   "notFound.title": "This page doesn't exist",
   "notFound.lead": "The link may be broken or the page may have moved.",
