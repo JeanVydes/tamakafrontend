@@ -20,17 +20,20 @@ origen y no hace falta CORS en desarrollo.
 
 ## Producción
 
-El frontend se sirve desde `https://taminaka.com` y la API desde `https://api.taminaka.com` (el mismo gateway nginx
-del backend). `.env.production` define `VITE_API_BASE_URL=https://api.taminaka.com`, de modo que `src/api/http.ts`
-usa rutas absolutas a la API en vez de las relativas `/api` del desarrollo. El gateway responde CORS para
-todos los orígenes (`Access-Control-Allow-Origin: *`) + preflight `OPTIONS` (ver `infra/gateway/nginx.conf` del backend).
+El frontend se sirve desde `https://www.taminaka.com` (Vercel). Las peticiones van por el **mismo origen**
+(`/api/…` relativo) y `vercel.json` las proxea al gateway del backend en AWS (`http://api.taminaka.com`):
+el edge de Vercel hace de reverse proxy, el navegador nunca ve HTTP ni un origen distinto
+(así no hay mixed content y no hace falta CORS para el navegador).
 
 ```bash
-npm run build        # genera dist/ con la API de producción
-# servir dist/ estático en https://taminaka.com con try_files $uri /index.html; para las rutas de la SPA
+npm run build        # genera dist/
+# Vercel compila y publica dist/ con cada deploy (vercel --prod)
 ```
 
-`npx vite preview` también funciona: sirve `dist/` y aplica el mismo proxy `/api` de desarrollo.
+El gateway del backend además responde CORS `*` + preflight `OPTIONS` (ver `infra/gateway/nginx.conf`), por
+si algún día el API se sirve directamente por HTTPS en `https://api.taminaka.com`: en ese caso basta definir
+`VITE_API_BASE_URL=https://api.taminaka.com` (en `.env.production` o en las env vars de Vercel) y quitar el
+rewrite de `vercel.json`. Dev sigue en `npm run dev` con el proxy de Vite (`http://127.0.0.1:80`).
 
 ## Datos de demostración
 

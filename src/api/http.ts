@@ -24,9 +24,12 @@ export class ApiError extends Error {
 
 // En desarrollo VITE_API_BASE_URL queda vacio y las peticiones van a rutas relativas /api,
 // que el proxy de Vite reenvia al gateway del backend (TAMAKA_GATEWAY). En produccion
-// .env.production define VITE_API_BASE_URL=https://api.taminaka.com (el gateway responde
-// CORS con "*"), de modo que el frontend puede servirse desde cualquier origen
-// (https://taminaka.com) sin depender del mismo origen.
+// (.env.production lo deja igualmente vacio) las peticiones tambien van relativas y, a traves
+// del rewrite de vercel.json, el edge de Vercel proxea /api al gateway de la EC2
+// (http://api.taminaka.com): el navegador nunca ve un origen distinto, DVD no hay mixed content
+// ni hace falta CORS en el navegador. Si el API llegare a servirse con TLS en
+// https://api.taminaka.com, basta definir VITE_API_BASE_URL=https://api.taminaka.com y quitar
+// el rewrite.
 const API_BASE = ((import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "").replace(/\/+$/, "");
 
 const STORAGE_KEY = "tamaka.tokens";
