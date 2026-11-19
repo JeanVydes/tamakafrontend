@@ -111,6 +111,8 @@ const newAtractivos = [
 ];
 const attractIds = new Map(atractivos.map((a) => [a.nombre, a]));
 for (const [nombre, categoria, descripcion, foto] of newAtractivos) {
+  // En AWS ya existe «Centro Historico» del seed original: no duplicarlo con el homólogo nuevo.
+  if (nombre === "Centro Histórico de Santa Marta" && attractIds.has("Centro Historico")) continue;
   if (attractIds.has(nombre)) continue;
   const a = ok(await call("POST", "/api/atractivos", { token: gestor.accessToken, body: { nombre, categoria, descripcion } }), nombre);
   attractIds.set(nombre, a);
@@ -125,6 +127,11 @@ const atractivoImage = new Map([
   ["Bahía Concha", PHOTOS.aerial],
   ["Minca", PHOTOS.sierra],
   ["Ciudad Perdida (Teyuna)", PHOTOS.birds],
+  // nombres del seed de AWS (producción)
+  ["Playa Cristal", PHOTOS.beach],
+  ["Centro Historico", PHOTOS.hero],
+  ["Centro Histórico de Santa Marta", PHOTOS.hero],
+  ["Sendero de la Sierra", PHOTOS.sierra],
   ...newAtractivos.map(([nombre]) => [nombre, newAtractivos.find(([n]) => n === nombre)[3]]),
 ]);
 for (const a of allAttracts) {
@@ -155,6 +162,9 @@ const eventImage = new Map([
   ["Fiestas del Mar", PHOTOS.island],
   ["Noche de cumbia en el Parque de los Novios", PHOTOS.island],
   ["Mercado campesino de Minca", PHOTOS.sierra],
+  // nombres del seed de AWS (producción)
+  ["Festival del Mar", PHOTOS.island],
+  ["Feria Artesanal", PHOTOS.hero],
   ...newEventos.map(([titulo]) => [titulo, newEventos.find(([t]) => t === titulo)[6]]),
 ]);
 for (const [titulo, descripcion, lugar, categoria, fechaInicio, fechaFin, foto] of newEventos) {
@@ -173,7 +183,7 @@ for (const e of allEventos) {
 const me = ok(await call("GET", "/api/cuentas/me", { token: operadorToken }), "me");
 const comercios = ok(await call("GET", "/api/comercios"), "comercios");
 let sierra = comercios.find((c) => c.operadorId === me.id && c.nombre === "Sierra Viva Tours");
-if (!sierra) {
+if (!sierra && !comercios.some((c) => c.nombre === "Sierra Viva Tours")) {
   sierra = ok(
     await call("POST", "/api/comercios", {
       token: operadorToken,
@@ -182,8 +192,10 @@ if (!sierra) {
     "comercio Sierra Viva",
   );
   log("comercio creado: Sierra Viva Tours");
+} else if (!sierra) {
+  log("Sierra Viva Tours ya existe en el entorno (otro operador); se omite junto con sus servicios");
 }
-if (sierra.imagen === null || sierra.imagen === undefined) {
+if (sierra && (sierra.imagen === null || sierra.imagen === undefined)) {
   await ensureImage("comercios", sierra, PHOTOS.sierra, operadorToken);
 }
 const diveName = "Taganga Dive Center";
@@ -212,6 +224,7 @@ const diveServices = [
   ["PADI Open Water (3 días)", 950000, 1, 6, PHOTOS.hero],
 ];
 for (const [owner, list] of [[sierra, sierraServices], [dive, diveServices]]) {
+  if (!owner) continue;
   const detail = ok(await call("GET", `/api/comercios/${owner.id}`), `detalle ${owner.id}`);
   for (const [nombre, precioBase, minPersonas, maxPersonas, foto] of list) {
     let svc = detail.servicios.find((s) => s.nombre === nombre);
@@ -225,20 +238,28 @@ for (const [owner, list] of [[sierra, sierraServices], [dive, diveServices]]) {
 }
 
 // --- 5. reservas extra del viajero --------------------------------------
-const mias = ok(await call("GET", "/api/reservas/mias", { token: viajero.accessToken }), "mis reservas");
-const fee = (days) => new Date(Date.now() + days * 86400_000).toISOString().slice(0, 10);
-const diveDetail = ok(await call("GET", `/api/comercios/${dive.id}`), "detalle dive");
-const bautizo = diveDetail.servicios.find((s) => s.nombre === "Bautizo de buceo en Taganga");
-if (bautizo && !mias.some((r) => r.servicioId === bautizo.id)) {
-  const r = ok(await call("POST", "/api/reservas", { token: viajero.accessToken, body: { servicioId: bautizo.id, fechaReserva: fee(8), numeroPersonas: 2 } }), "reserva bautizo");
-  await call("PATCH", `/api/operador/reservas/${r.id}/respuesta`, { token: operadorToken, body: { aceptada: true, valorAPagar: 560000, observacion: "Salida 8:00 a. m. desde la playa de Taganga. Trae tu documento." } });
-  log(`reserva aceptada creada: R-${r.id} (bautizo)`);
-}
-const sierraDetail = ok(await call("GET", `/api/comercios/${sierra.id}`), "detalle sierra");
-const estrellas = sierraDetail.servicios.find((s) => s.nombre === "Tour de estrellas en la Sierra");
-if (estrellas && !mias.some((r) => r.servicioId === estrellas.id)) {
-  const r = ok(await call("POST", "/api/reservas", { token: viajero.accessToken, body: { servicioId: estrellas.id, fechaReserva: fee(9), numeroPersonas: 2 } }), "reserva estrellas");
-  log(`reserva pendiente creada: R-${r.id} (estrellas)`);
+// En producción se omiten por defecto: TAMAKA_SKIP_RESERVAS=1
+const SKIP_RESERVAS = process.env.TAMAKA_SKIP_RESERVAS === "1";
+if (!SKIP_RESERVAS) {
+  const mias = ok(await call("GET", "/api/reservas/mias", { token: viajero.accessToken }), "mis reservas");
+  const fee = (days) => new Date(Date.now() + days * 86400_000).toISOString().slice(0, 10);
+  const diveDetail = ok(await call("GET", `/api/comercios/${dive.id}`), "detalle dive");
+  const bautizo = diveDetail.servicios.find((s) => s.nombre === "Bautizo de buceo en Taganga");
+  if (bautizo && !mias.some((r) => r.servicioId === bautizo.id)) {
+    const r = ok(await call("POST", "/api/reservas", { token: viajero.accessToken, body: { servicioId: bautizo.id, fechaReserva: fee(8), numeroPersonas: 2 } }), "reserva bautizo");
+    await call("PATCH", `/api/operador/reservas/${r.id}/respuesta`, { token: operadorToken, body: { aceptada: true, valorAPagar: 560000, observacion: "Salida 8:00 a. m. desde la playa de Taganga. Trae tu documento." } });
+    log(`reserva aceptada creada: R-${r.id} (bautizo)`);
+  }
+  if (sierra) {
+    const sierraDetail = ok(await call("GET", `/api/comercios/${sierra.id}`), "detalle sierra");
+    const estrellas = sierraDetail.servicios.find((s) => s.nombre === "Tour de estrellas en la Sierra");
+    if (estrellas && !mias.some((r) => r.servicioId === estrellas.id)) {
+      const r = ok(await call("POST", "/api/reservas", { token: viajero.accessToken, body: { servicioId: estrellas.id, fechaReserva: fee(9), numeroPersonas: 2 } }), "reserva estrellas");
+      log(`reserva pendiente creada: R-${r.id} (estrellas)`);
+    }
+  }
+} else {
+  log("reservas omitidas por TAMAKA_SKIP_RESERVAS=1");
 }
 
 // --- 6. preferencias -----------------------------------------------------
