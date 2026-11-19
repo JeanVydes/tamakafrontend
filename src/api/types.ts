@@ -10,6 +10,8 @@ export interface Cuenta {
   modoOperador: boolean;
   roles: Rol[];
   creadaEn: string;
+  /** Foto de perfil (R2); null/ausente si usa iniciales. */
+  imagen?: string | null;
 }
 
 export interface TokenPair {
@@ -39,6 +41,8 @@ export interface Atractivo {
   descripcion: string | null;
   categoria: string;
   estado: EstadoAtractivo;
+  /** Portada real (R2); null/ausente si no tiene (la UI usa una foto ilustrativa). */
+  imagen?: string | null;
 }
 
 export interface AtractivoDetalle extends Atractivo {
@@ -53,6 +57,8 @@ export interface Comercio {
   categoria: string;
   descripcion: string | null;
   activo: boolean;
+  /** Portada real (R2); null/ausente si no tiene (la UI usa una foto ilustrativa). */
+  imagen?: string | null;
 }
 
 export interface Servicio {
@@ -65,6 +71,8 @@ export interface Servicio {
   maxPersonas: number;
   activo: boolean;
   atributos: Record<string, unknown> | null;
+  /** Portada real (R2); null/ausente si no tiene (la UI usa una foto ilustrativa). */
+  imagen?: string | null;
 }
 
 export interface ComercioDetalle extends Comercio {
@@ -80,6 +88,8 @@ export interface Evento {
   fechaInicio: string;
   fechaFin: string;
   activo: boolean;
+  /** Portada real (R2); null/ausente si no tiene (la UI usa una foto ilustrativa). */
+  imagen?: string | null;
 }
 
 export type EstadoReserva = "PENDIENTE" | "ACEPTADA" | "RECHAZADA" | "CANCELADA" | "CONFIRMADA" | "FINALIZADA";

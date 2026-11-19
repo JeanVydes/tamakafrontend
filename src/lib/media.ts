@@ -40,3 +40,9 @@ export function photoFor(category: string | null | undefined, seed: number) {
   const list = hit ? hit[1] : pool;
   return list[Math.abs(seed) % list.length];
 }
+
+/** Portada: la que subió el operador/gestor (R2) o la ilustrativa de Unsplash de siempre. */
+export function coverFor(imagen: string | null | undefined, category: string | null | undefined, seed: number) {
+  if (imagen) return { src: imagen, illustrative: false };
+  return { src: photoFor(category ?? "", seed), illustrative: true };
+}

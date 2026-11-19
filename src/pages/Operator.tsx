@@ -14,6 +14,7 @@ import { useI18n } from "../i18n/I18n";
 import { day, errorText, humanize, money } from "../lib/format";
 import { useAsync } from "../lib/hooks";
 import { useServicio } from "./Reservations";
+import { ImageButton } from "../components/ImageUpload";
 
 export function Metric({ icon: Icon, tone = "", label, value }: { icon: typeof Store; tone?: string; label: string; value: string | number }) {
   return (
@@ -125,6 +126,8 @@ export function OperatorBusinesses() {
   const { t } = useI18n();
   const toast = useToast();
   const list = useMyComercios();
+  const setImagen = (upd: import("../api/types").Comercio) =>
+    list.setData((l) => (l ?? []).map((x) => (x.id === upd.id ? upd : x)));
   const [editing, setEditing] = useState<Comercio | "new" | null>(null);
   const [form, setForm] = useState(emptyBiz);
   const [busy, setBusy] = useState(false);
@@ -202,6 +205,12 @@ export function OperatorBusinesses() {
                       <Pill tone={c.activo ? "ok" : "neutral"}>{c.activo ? t("op.active") : t("op.inactive")}</Pill>
                     </td>
                     <td className="row-actions">
+                      <ImageButton
+                        title={c.nombre}
+                        url={c.imagen}
+                        onUpload={async (f) => setImagen(await comercios.subirImagen(c.id, f))}
+                        onRemove={async () => setImagen(await comercios.eliminarImagen(c.id))}
+                      />
                       <Link to={`/operador/servicios?comercio=${c.id}`} className="table-action">
                         {t("panel.services")}
                       </Link>
@@ -388,6 +397,12 @@ export function OperatorServices() {
                       </label>
                     </td>
                     <td className="row-actions">
+                      <ImageButton
+                        title={s.nombre}
+                        url={s.imagen}
+                        onUpload={async (f) => { const upd = await servicios.subirImagen(s.id, f); setLocal((l) => l.map((x) => (x.id === upd.id ? upd : x))); }}
+                        onRemove={async () => { const upd = await servicios.eliminarImagen(s.id); setLocal((l) => l.map((x) => (x.id === upd.id ? upd : x))); }}
+                      />
                       <button type="button" className="table-action" onClick={() => setEditing(s)}>
                         <Pencil size={14} /> {t("common.edit")}
                       </button>

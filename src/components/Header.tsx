@@ -150,7 +150,7 @@ function ProfileMenu() {
     <div className="profile-menu" ref={ref}>
       <button type="button" className="profile-trigger" aria-expanded={open} aria-haspopup="menu" onClick={() => setOpen(!open)}>
         <span className="avatar" aria-hidden="true">
-          {initials(cuenta.nombre)}
+          {cuenta.imagen ? <img src={cuenta.imagen} alt="" className="avatar-photo" /> : initials(cuenta.nombre)}
         </span>
         <span className="profile-copy">
           <strong>{cuenta.nombre}</strong>
@@ -162,7 +162,7 @@ function ProfileMenu() {
         <div className="profile-dropdown" role="menu">
           <div className="menu-identity">
             <span className="avatar lg" aria-hidden="true">
-              {initials(cuenta.nombre)}
+              {cuenta.imagen ? <img src={cuenta.imagen} alt="" className="avatar-photo" /> : initials(cuenta.nombre)}
             </span>
             <span className="menu-identity-copy">
               <strong>{cuenta.nombre}</strong>

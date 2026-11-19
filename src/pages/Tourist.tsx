@@ -11,7 +11,7 @@ import { EmptyState, ErrorState, LinkButton, Loading, PageHeading, Segmented } f
 import { useI18n } from "../i18n/I18n";
 import { errorText, humanize, money, relative } from "../lib/format";
 import { resolveAll, useAsync } from "../lib/hooks";
-import { photoFor } from "../lib/media";
+import { coverFor } from "../lib/media";
 
 // ---------- Favoritos ----------
 
@@ -30,7 +30,7 @@ function ServicioCard({ s }: { s: Servicio }) {
     <article className="offer-card">
       <Link to={`/comercios/${s.comercioId}`} className="card-link">
         <div className="card-image">
-          <img src={photoFor(s.nombre, s.id)} alt="" loading="lazy" />
+          <img src={coverFor(s.imagen, s.nombre, s.id).src} alt="" loading="lazy" />
         </div>
         <div className="card-body">
           <h3>{s.nombre}</h3>

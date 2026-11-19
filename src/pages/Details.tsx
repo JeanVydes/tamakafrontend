@@ -9,7 +9,7 @@ import { Dialog, EmptyState, ErrorState, EstadoPill, FavButton, Loading } from "
 import { useI18n } from "../i18n/I18n";
 import { dateTime, day, errorText, humanize, money, todayIso } from "../lib/format";
 import { useAsync } from "../lib/hooks";
-import { photoFor } from "../lib/media";
+import { coverFor } from "../lib/media";
 
 function Back() {
   const { t } = useI18n();
@@ -21,14 +21,14 @@ function Back() {
   );
 }
 
-function DetailMedia({ src, category, fav }: { src: string; category: string; fav: React.ReactNode }) {
+function DetailMedia({ cover, category, fav }: { cover: { src: string; illustrative: boolean }; category: string; fav: React.ReactNode }) {
   const { t } = useI18n();
   return (
     <figure className="detail-media">
-      <img src={src} alt="" />
+      <img src={cover.src} alt="" />
       <span className="category-pill">{humanize(category)}</span>
       {fav}
-      <figcaption>{t("common.illustrative")}</figcaption>
+      {cover.illustrative && <figcaption>{t("common.illustrative")}</figcaption>}
     </figure>
   );
 }
@@ -47,7 +47,7 @@ export function AtractivoDetail() {
       <Back />
       <div className="detail-layout">
         <div className="detail-main">
-          <DetailMedia src={photoFor(`${a.nombre} ${a.categoria}`, a.id)} category={a.categoria} fav={<FavButton tipo="ATRACTIVO" refId={a.id} />} />
+          <DetailMedia cover={coverFor(a.imagen, `${a.nombre} ${a.categoria}`, a.id)} category={a.categoria} fav={<FavButton tipo="ATRACTIVO" refId={a.id} />} />
           <h1>{a.nombre}</h1>
           <p className="card-meta">
             <MapPin size={16} /> Santa Marta, Magdalena
@@ -163,7 +163,7 @@ export function ComercioDetail() {
       <Back />
       <div className="detail-layout">
         <div className="detail-main">
-          <DetailMedia src={photoFor(c.categoria, c.id + 7)} category={c.categoria} fav={<FavButton tipo="COMERCIO" refId={c.id} />} />
+          <DetailMedia cover={coverFor(c.imagen, c.categoria, c.id + 7)} category={c.categoria} fav={<FavButton tipo="COMERCIO" refId={c.id} />} />
           <h1>{c.nombre}</h1>
           <p className="card-meta">
             <BadgeCheck size={16} /> {t("detail.rnt", { rnt: c.rnt })}
@@ -225,7 +225,7 @@ export function EventoDetail() {
       <Back />
       <div className="detail-layout">
         <div className="detail-main">
-          <DetailMedia src={photoFor(e.categoria || "evento", e.id + 3)} category={e.categoria || "GENERAL"} fav={<FavButton tipo="EVENTO" refId={e.id} />} />
+          <DetailMedia cover={coverFor(e.imagen, e.categoria || "evento", e.id + 3)} category={e.categoria || "GENERAL"} fav={<FavButton tipo="EVENTO" refId={e.id} />} />
           <h1>{e.titulo}</h1>
           {e.descripcion && <p className="detail-desc">{e.descripcion}</p>}
         </div>

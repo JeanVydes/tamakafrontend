@@ -121,18 +121,8 @@ interface RequestOptions {
   auth?: boolean;
 }
 
-export async function api<T>(path: string, { method = "GET", body, auth = true }: RequestOptions = {}): Promise<T> {
-  const send = () => {
-    const headers: Record<string, string> = { Accept: "application/json" };
-    if (body !== undefined) headers["Content-Type"] = "application/json";
-    if (auth && tokens) headers.Authorization = `Bearer ${tokens.accessToken}`;
-    return fetch(`${API_BASE}/api${path}`, {
-      method,
-      headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
-  };
-
+/** Errores expresivos compartidos por api() y apiForm(): 401 dispara refresh y reintento. */
+async function sendWithRefresh<T>(send: () => Promise<Response>, auth: boolean): Promise<T> {
   let res: Response;
   try {
     res = await send();
@@ -156,4 +146,38 @@ export async function api<T>(path: string, { method = "GET", body, auth = true }
   if (res.status === 204) return undefined as T;
   const text = await res.text();
   return (text ? JSON.parse(text) : undefined) as T;
+}
+
+export async function api<T>(path: string, { method = "GET", body, auth = true }: RequestOptions = {}): Promise<T> {
+  const send = () => {
+    const headers: Record<string, string> = { Accept: "application/json" };
+    if (body !== undefined) headers["Content-Type"] = "application/json";
+    if (auth && tokens) headers.Authorization = `Bearer ${tokens.accessToken}`;
+    return fetch(`${API_BASE}/api${path}`, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  };
+  return sendWithRefresh<T>(send, auth);
+}
+
+interface FormOptions {
+  method?: "POST" | "PUT" | "PATCH" | "DELETE";
+  formData: FormData;
+  auth?: boolean;
+}
+
+/** Subida multipart: misma captura de errores y refresh que api(), pero sin forzar Content-Type. */
+export async function apiForm<T>(path: string, { method = "POST", formData, auth = true }: FormOptions): Promise<T> {
+  const send = () => {
+    const headers: Record<string, string> = { Accept: "application/json" };
+    if (auth && tokens) headers.Authorization = `Bearer ${tokens.accessToken}`;
+    return fetch(`${API_BASE}/api${path}`, {
+      method,
+      headers,
+      body: formData,
+    });
+  };
+  return sendWithRefresh<T>(send, auth);
 }

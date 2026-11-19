@@ -4,6 +4,8 @@ import { atractivos, eventos, indicadores, type EventoInput } from "../api/endpo
 import type { EstadoAtractivo, Evento } from "../api/types";
 import { useAuth } from "../auth/Auth";
 import { CategoryField, normalizeCategory } from "../components/CategoryField";
+import { ImageButton } from "../components/ImageUpload";
+
 import { Select } from "../components/Select";
 import { useToast } from "../components/Toast";
 import { EmptyState, ErrorState, Loading, PageHeading, Pill } from "../components/ui";
@@ -25,6 +27,9 @@ export function GestorAttractions() {
   const [form, setForm] = useState({ nombre: "", categoria: "", descripcion: "" });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+
+  const refreshItem = (upd: import("../api/types").Atractivo) =>
+    list.setData((l) => (l ?? []).map((x) => (x.id === upd.id ? upd : x)));
 
   const changeState = async (id: number, estado: EstadoAtractivo) => {
     try {
@@ -117,6 +122,9 @@ export function GestorAttractions() {
                   <th>{t("common.name")}</th>
                   <th>{t("common.category")}</th>
                   <th>{t("common.state")}</th>
+                  <th>
+                    <span className="sr-only">{t("common.photo")}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -141,6 +149,14 @@ export function GestorAttractions() {
                           </button>
                         ))}
                       </div>
+                    </td>
+                    <td>
+                      <ImageButton
+                        title={a.nombre}
+                        url={a.imagen}
+                        onUpload={async (f) => refreshItem(await atractivos.subirImagen(a.id, f))}
+                        onRemove={async () => refreshItem(await atractivos.eliminarImagen(a.id))}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -390,6 +406,12 @@ export function GestorEvents() {
                       </td>
                       {canEdit && (
                         <td className="row-actions">
+                          <ImageButton
+                            title={ev.titulo}
+                            url={ev.imagen}
+                            onUpload={async (f) => { const upd = await eventos.subirImagen(ev.id, f); list.setData((l) => (l ?? []).map((x) => (x.id === upd.id ? upd : x))); }}
+                            onRemove={async () => { const upd = await eventos.eliminarImagen(ev.id); list.setData((l) => (l ?? []).map((x) => (x.id === upd.id ? upd : x))); }}
+                          />
                           <button type="button" className="table-action" onClick={() => setEditing(ev)}>
                             <Pencil size={14} /> {t("common.edit")}
                           </button>

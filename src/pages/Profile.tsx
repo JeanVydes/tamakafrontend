@@ -2,13 +2,14 @@ import { ArrowLeftRight, ArrowRight, Check, Landmark, LayoutDashboard, LogOut, P
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cuentas, preferencias } from "../api/endpoints";
+import { ImageUpload } from "../components/ImageUpload";
 import type { Preferencias } from "../api/types";
 import { useAuth } from "../auth/Auth";
 import { Select } from "../components/Select";
 import { useToast } from "../components/Toast";
 import { Loading, PageHeading, Pill } from "../components/ui";
 import { useI18n, type Lang } from "../i18n/I18n";
-import { day, errorText, humanize, initials } from "../lib/format";
+import { day, errorText, humanize } from "../lib/format";
 import { photos } from "../lib/media";
 
 const SUGGESTED = ["PLAYA", "NATURALEZA", "CULTURA", "AVENTURA", "GASTRONOMIA", "TOURS"];
@@ -104,7 +105,7 @@ function PreferencesCard() {
 
 export function Profile() {
   const { t, lang } = useI18n();
-  const { cuenta, roles, applySession, logout } = useAuth();
+  const { cuenta, roles, applySession, logout, reload } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -157,9 +158,18 @@ export function Profile() {
           <img src={photos.authArt} alt="" />
         </div>
         <div className="profile-hero-body">
-          <div className="large-avatar" aria-hidden="true">
-            {initials(cuenta.nombre)}
-          </div>
+          <ImageUpload
+            variant="square"
+            url={cuenta.imagen}
+            onUpload={async (file) => {
+              await cuentas.subirFoto(file);
+              await reload();
+            }}
+            onRemove={async () => {
+              await cuentas.eliminarFoto();
+              await reload();
+            }}
+          />
           <div className="profile-id">
             <h2>{cuenta.nombre}</h2>
             <p>{cuenta.email}</p>

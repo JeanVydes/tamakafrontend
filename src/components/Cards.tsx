@@ -3,16 +3,16 @@ import { Link } from "react-router-dom";
 import type { Atractivo, Comercio, Evento } from "../api/types";
 import { useI18n } from "../i18n/I18n";
 import { day, humanize } from "../lib/format";
-import { photoFor } from "../lib/media";
+import { coverFor } from "../lib/media";
 import { EstadoPill, FavButton } from "./ui";
 
-function CardImage({ src, alt, category }: { src: string; alt: string; category: string }) {
+function CardImage({ src, alt, category, illustrative }: { src: string; alt: string; category: string; illustrative: boolean }) {
   const { t } = useI18n();
   return (
     <>
       <img src={src} alt={alt} loading="lazy" decoding="async" />
       <span className="category-pill">{humanize(category)}</span>
-      <span className="illustrative-tag">{t("common.illustrative")}</span>
+      {illustrative && <span className="illustrative-tag">{t("common.illustrative")}</span>}
     </>
   );
 }
@@ -23,7 +23,7 @@ export function AtractivoCard({ a }: { a: Atractivo }) {
     <article className={`offer-card state-${a.estado.toLowerCase()}`}>
       <Link to={`/atractivos/${a.id}`} className="card-link">
         <div className="card-image">
-          <CardImage src={photoFor(`${a.nombre} ${a.categoria}`, a.id)} alt="" category={a.categoria} />
+          <CardImage {...coverFor(a.imagen, `${a.nombre} ${a.categoria}`, a.id)} alt="" category={a.categoria} />
           {/* El aviso va sobre la foto y no en el flujo: así ninguna tarjeta crece ni desalinea a sus vecinas. */}
           {a.estado !== "ABIERTO" && (
             <span className="state-chip">
@@ -57,7 +57,7 @@ export function ComercioCard({ c }: { c: Comercio }) {
     <article className="offer-card">
       <Link to={`/comercios/${c.id}`} className="card-link">
         <div className="card-image">
-          <CardImage src={photoFor(c.categoria, c.id + 7)} alt="" category={c.categoria} />
+          <CardImage {...coverFor(c.imagen, c.categoria, c.id + 7)} alt="" category={c.categoria} />
         </div>
         <div className="card-body">
           <h3>{c.nombre}</h3>
@@ -84,7 +84,7 @@ export function EventoCard({ e }: { e: Evento }) {
     <article className="offer-card event">
       <Link to={`/eventos/${e.id}`} className="card-link">
         <div className="card-image">
-          <CardImage src={photoFor(e.categoria || "evento", e.id + 3)} alt="" category={e.categoria || "GENERAL"} />
+          <CardImage {...coverFor(e.imagen, e.categoria || "evento", e.id + 3)} alt="" category={e.categoria || "GENERAL"} />
           <span className="date-chip" aria-hidden="true">
             <strong>{start.getDate()}</strong>
             <small>{start.toLocaleDateString(lang === "en" ? "en-US" : "es-CO", { month: "short" })}</small>

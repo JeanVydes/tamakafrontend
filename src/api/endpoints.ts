@@ -1,4 +1,4 @@
-import { api } from "./http";
+import { api, apiForm } from "./http";
 import type {
   Atractivo,
   AtractivoDetalle,
@@ -43,6 +43,12 @@ export const cuentas = {
   me: () => api<Cuenta>("/cuentas/me"),
   habilitarOperador: () => api<Sesion>("/cuentas/me/modo-operador", { method: "POST" }),
   cambiarModo: (modo: "TURISTA" | "OPERADOR") => api<Sesion>("/cuentas/me/modo", { method: "PATCH", body: { modo } }),
+  subirFoto: (file: File) => {
+    const fd = new FormData();
+    fd.append("archivo", file);
+    return apiForm<Cuenta>("/cuentas/me/foto", { formData: fd });
+  },
+  eliminarFoto: () => api<Cuenta>("/cuentas/me/foto", { method: "DELETE" }),
 };
 
 export const admin = {
@@ -62,6 +68,12 @@ export const atractivos = {
     api<Atractivo>("/atractivos", { method: "POST", body }),
   cambiarEstado: (id: number, estado: EstadoAtractivo) =>
     api<Atractivo>(`/atractivos/${id}/estado`, { method: "PATCH", body: { estado } }),
+  subirImagen: (id: number, file: File) => {
+    const fd = new FormData();
+    fd.append("archivo", file);
+    return apiForm<Atractivo>(`/atractivos/${id}/imagen`, { formData: fd });
+  },
+  eliminarImagen: (id: number) => api<Atractivo>(`/atractivos/${id}/imagen`, { method: "DELETE" }),
   emitirAlerta: (atractivoId: number, mensaje: string) =>
     api<void>("/alertas", { method: "POST", body: { atractivoId, mensaje } }),
 };
@@ -84,6 +96,12 @@ export const comercios = {
     api<Comercio>(`/comercios/${id}`, { method: "PATCH", body }),
   agregarServicio: (id: number, body: ServicioInput) =>
     api<Servicio>(`/comercios/${id}/servicios`, { method: "POST", body }),
+  subirImagen: (id: number, file: File) => {
+    const fd = new FormData();
+    fd.append("archivo", file);
+    return apiForm<Comercio>(`/comercios/${id}/imagen`, { formData: fd });
+  },
+  eliminarImagen: (id: number) => api<Comercio>(`/comercios/${id}/imagen`, { method: "DELETE" }),
 };
 
 export const servicios = {
@@ -92,6 +110,12 @@ export const servicios = {
     api<Servicio>(`/servicios/${id}`, { method: "PATCH", body }),
   cambiarActivo: (id: number, activo: boolean) =>
     api<Servicio>(`/servicios/${id}/activo`, { method: "PATCH", body: { activo } }),
+  subirImagen: (id: number, file: File) => {
+    const fd = new FormData();
+    fd.append("archivo", file);
+    return apiForm<Servicio>(`/servicios/${id}/imagen`, { formData: fd });
+  },
+  eliminarImagen: (id: number) => api<Servicio>(`/servicios/${id}/imagen`, { method: "DELETE" }),
 };
 
 export interface EventoInput {
@@ -109,6 +133,12 @@ export const eventos = {
   publicar: (body: EventoInput) => api<Evento>("/eventos", { method: "POST", body }),
   actualizar: (id: number, body: EventoInput) => api<Evento>(`/eventos/${id}`, { method: "PATCH", body }),
   desactivar: (id: number) => api<Evento>(`/eventos/${id}/desactivar`, { method: "PATCH" }),
+  subirImagen: (id: number, file: File) => {
+    const fd = new FormData();
+    fd.append("archivo", file);
+    return apiForm<Evento>(`/eventos/${id}/imagen`, { formData: fd });
+  },
+  eliminarImagen: (id: number) => api<Evento>(`/eventos/${id}/imagen`, { method: "DELETE" }),
 };
 
 export const reservas = {
