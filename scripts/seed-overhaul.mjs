@@ -217,11 +217,18 @@ const sierraServices = [
   ["Tour en lancha a Playa Blanca", 85000, 1, 12, PHOTOS.island],
   ["Avistamiento de aves al amanecer", 150000, 1, 6, PHOTOS.birds],
   ["Tour de estrellas en la Sierra", 110000, 2, 8, PHOTOS.aerial],
+  ["Tayrona día completo con almuerzo", 150000, 2, 12, PHOTOS.tayrona],
+  ["Bicicleta eléctrica por Minca", 95000, 2, 10, PHOTOS.sierra],
 ];
 const diveServices = [
   ["Bautizo de buceo en Taganga", 280000, 1, 4, PHOTOS.coast],
   ["Careteo en el arrecife", 65000, 1, 10, PHOTOS.beach],
   ["PADI Open Water (3 días)", 950000, 1, 6, PHOTOS.hero],
+  ["Snorkel al amanecer en el coral", 90000, 2, 8, PHOTOS.island],
+  ["Inmersión nocturna entre rayas", 340000, 1, 4, PHOTOS.aerial],
+  ["PADI Advanced Open Water", 850000, 1, 6, PHOTOS.hero],
+  ["Renta de equipo de buceo (día)", 45000, 1, 6, PHOTOS.coast],
+  ["Careteo para niños acompañados", 40000, 1, 8, PHOTOS.beach],
 ];
 for (const [owner, list] of [[sierra, sierraServices], [dive, diveServices]]) {
   if (!owner) continue;
